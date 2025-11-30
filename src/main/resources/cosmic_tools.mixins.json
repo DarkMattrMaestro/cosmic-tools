@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.darkmattrmaestro.cosmic_tools.mixins",
+  "compatibilityLevel": "JAVA_24",
+  "mixins": [
+  ],
+  "server": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
