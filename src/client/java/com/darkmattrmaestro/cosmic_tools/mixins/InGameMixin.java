@@ -3,6 +3,7 @@ package com.darkmattrmaestro.cosmic_tools.mixins;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import finalforeach.cosmicreach.blocks.BlockPosition;
 import finalforeach.cosmicreach.gamestates.InGame;
 import finalforeach.cosmicreach.items.ItemStack;
 import finalforeach.cosmicreach.ui.UI;
@@ -38,8 +39,8 @@ public class InGameMixin {
 //                Spatula.getSelection().draw(cosmictools$sr2, new Color(0, 0.7882352941f, 0, 0.25f), new Color(0.2745098039f, 0.9098039216f, 0.2745098039f, 1));
 //            }
             // Where to paste
-            if (Spatula.getPasteSelection(true) != null) {
-                Spatula.getPasteSelection(false).draw(cosmictools$sr2, new Color(0.7882352941f, 0, 0, 0.25f), new Color(0.9098039216f, 0.2745098039f, 0.2745098039f, 1));
+            if (Spatula.getSelection() != null) {
+                Spatula.copyBlocks.draw(cosmictools$sr2);
             }
         }
 

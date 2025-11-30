@@ -191,7 +191,7 @@ public class BlockSelectionUtil {
                             blockAxis.pos = BlockPosition.ofGlobal(InGame.getLocalPlayer().getZone(), x, y, z);
 
                             double dist = CustomGameMath.rayAABBTest(ray, subAABB);
-                            Constants.LOGGER.warn("closestCollision: {} dist: {}", closestCollision, dist);
+//                            Constants.LOGGER.warn("closestCollision: {} dist: {}", closestCollision, dist);
                             if (dist < closestCollision && !(subAABB.getWidth() == 0 || subAABB.getHeight() == 0 || subAABB.getDepth() == 0)) {
                                 closestCollision = dist;
 
@@ -224,9 +224,9 @@ public class BlockSelectionUtil {
 
                                 Vector3 center = new Vector3();
                                 subAABB.getCenter(center);
-                                Constants.LOGGER.warn("   suAABB: {}   blockAxis: {}   ~ {} {} {} | {} - {}", subAABB, blockAxis, dx, dy, dz, center, collisionPos);
-                                Constants.LOGGER.warn("                           - {} {} {}", subAABB.getWidth(), subAABB.getHeight(), subAABB.getDepth());
-                                Constants.LOGGER.warn("                           - min: {}   max: {}", subAABB.min, subAABB.max);
+//                                Constants.LOGGER.warn("   suAABB: {}   blockAxis: {}   ~ {} {} {} | {} - {}", subAABB, blockAxis, dx, dy, dz, center, collisionPos);
+//                                Constants.LOGGER.warn("                           - {} {} {}", subAABB.getWidth(), subAABB.getHeight(), subAABB.getDepth());
+//                                Constants.LOGGER.warn("                           - min: {}   max: {}", subAABB.min, subAABB.max);
                             }
                         }
                     }
