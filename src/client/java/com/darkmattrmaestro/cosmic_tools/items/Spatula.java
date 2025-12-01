@@ -1,18 +1,10 @@
 package com.darkmattrmaestro.cosmic_tools.items;
 
-//import  finalforeach.cosmicreach.BlockSelection;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.Input;
 import com.darkmattrmaestro.cosmic_tools.hallucination.Hallucination;
 import com.darkmattrmaestro.cosmic_tools.utils.*;
-import finalforeach.cosmicreach.blocks.Block;
-import finalforeach.cosmicreach.blocks.MissingBlockStateResult;
-import finalforeach.cosmicreach.entities.player.Player;
 import finalforeach.cosmicreach.gamestates.InGame;
-import finalforeach.cosmicreach.items.ItemSlot;
-import com.darkmattrmaestro.cosmic_tools.actions.FillAction;
 
-//import com.github.puzzle.game.util.BlockSelectionUtil;
 import finalforeach.cosmicreach.blocks.BlockPosition;
 import finalforeach.cosmicreach.blocks.BlockState;
 import finalforeach.cosmicreach.items.Item;
@@ -23,18 +15,17 @@ import finalforeach.cosmicreach.util.Identifier;
 import finalforeach.cosmicreach.world.Chunk;
 import finalforeach.cosmicreach.world.Zone;
 import io.github.puzzle.cosmic.item.AbstractCosmicItem;
-import io.github.puzzle.cosmic.util.APISide;
 import com.darkmattrmaestro.cosmic_tools.Constants;
+import org.spongepowered.asm.mixin.Unique;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import static java.lang.Math.abs;
-import static com.darkmattrmaestro.cosmic_tools.utils.ChatUtils.blockPosToString;
-import static com.darkmattrmaestro.cosmic_tools.utils.ChatUtils.sendMsg;
 
 public class Spatula extends AbstractCosmicItem {
+    public static float reachDist = 20.0f;
     public static BlockAxis blockAxis = null;
 //    public static Selection copySelection = null;
     public static Hallucination copyBlocks = new Hallucination();
@@ -43,12 +34,6 @@ public class Spatula extends AbstractCosmicItem {
         super(Identifier.of(Constants.MOD_ID, "spatula"));
         addTexture(ItemModelType.ITEM_MODEL_3D, Identifier.of(Constants.MOD_ID, "spatula.png"));
     }
-
-//    private static boolean assigningFirstPos = true;
-//    private static BlockPosition firstPos = null;
-//    private static BlockPosition secondPos = null;
-
-//    private static BlockPosition pasteStartPos = null;
 
     public static Hallucination getSelection(){
         int maxExpansion = 10;
@@ -84,7 +69,13 @@ public class Spatula extends AbstractCosmicItem {
 
 //        Constants.LOGGER.warn("BlockAxis: {}", blockAxis.axis);
         // Iterate expansion amount
-        for (int expansion = 0; expansion < maxExpansion; expansion++) {
+        boolean hasExpanded = true;
+        while (
+            hasExpanded
+//            && blockAxis.pos.getGlobalX() - minPos.x <= maxExpansion && blockAxis.pos.getGlobalY() - minPos.y <= maxExpansion && blockAxis.pos.getGlobalZ() - minPos.z <= maxExpansion
+//            && maxPos.x - blockAxis.pos.getGlobalX() <= maxExpansion && maxPos.y - blockAxis.pos.getGlobalY() <= maxExpansion && maxPos.z - blockAxis.pos.getGlobalZ() <= maxExpansion
+        ) {
+            hasExpanded = false;
 //            Constants.LOGGER.warn("Expanded: {}", expansion);
             // Iterate x, y, z, except the axis that is flat
             for (int i = 0; i < 3; i++) {
@@ -127,8 +118,14 @@ public class Spatula extends AbstractCosmicItem {
                                             frontBlockPos.getBlockState() == null
                                             || "base:air".equals(frontBlockPos.getBlockState().getBlockId())
                                     )
+                                    && ( // The block is within range
+                                        abs(blockAxis.pos.getGlobalX() - blockPos.getGlobalX()) <= maxExpansion
+                                        && abs(blockAxis.pos.getGlobalY() - blockPos.getGlobalY()) <= maxExpansion
+                                        && abs(blockAxis.pos.getGlobalZ() - blockPos.getGlobalZ()) <= maxExpansion
+                                    )
                             ) {
                                 copyBlocks.blocks.add(blockPos);
+                                hasExpanded = true;
                                 match = true;
                             }
                         }
@@ -143,49 +140,8 @@ public class Spatula extends AbstractCosmicItem {
             }
         }
 
-//        copySelection = Selection.of(
-//            BlockPosition.ofGlobal(
-//                InGame.getLocalPlayer().getZone(),
-//                minPos.x,
-//                minPos.y,
-//                minPos.z
-//            ),
-//            BlockPosition.ofGlobal(
-//                InGame.getLocalPlayer().getZone(),
-//                maxPos.x,
-//                maxPos.y,
-//                maxPos.z
-//            )
-//        );
         return copyBlocks;
     }
-
-//    public static Selection getPasteSelection(boolean update){
-//        if (update) { getSelection(); }
-//        if(blockAxis == null || copySelection == null) return null;
-//        return Selection.of(
-//            copySelection.minX + blockAxis.axis.x,
-//            copySelection.minY + blockAxis.axis.y,
-//            copySelection.minZ + blockAxis.axis.z,
-//            copySelection.maxX + blockAxis.axis.x,
-//            copySelection.maxY + blockAxis.axis.y,
-//            copySelection.maxZ + blockAxis.axis.z
-//        );
-//    }
-
-//    public static ArrayList<BlockPosition> getPasteSelection(boolean update){
-//        if (update) { getSelection(); }
-//
-//        if(blockAxis == null || copySelection == null) return null;
-//        return Selection.of(
-//                copySelection.minX + blockAxis.axis.x,
-//                copySelection.minY + blockAxis.axis.y,
-//                copySelection.minZ + blockAxis.axis.z,
-//                copySelection.maxX + blockAxis.axis.x,
-//                copySelection.maxY + blockAxis.axis.y,
-//                copySelection.maxZ + blockAxis.axis.z
-//        );
-//    }
 
     @Override
     public String toString() {
@@ -222,17 +178,11 @@ public class Spatula extends AbstractCosmicItem {
         return "Spatula";
     }
 
-    @Override
-    public boolean use(APISide side, ItemSlot itemSlot, Player player, BlockPosition _targetPlaceBlockPos, BlockPosition targetBreakBlockPos, boolean isLeftClick) {
-        if(side == APISide.SERVER) return false;
-        BlockPosition pos = BlockSelectionUtil.getBlockPositionLookingAt();
-        if(pos == null) {
-            return false;
-        }
+    @Unique
+    public static boolean onMousePressed(int button) {
+        if(!BlockSelectionUtil.doesCollideFar(reachDist)) { return false; }
 
-        if(isLeftClick) {
-            // Left Click
-        } else {
+        if(button == Input.Buttons.RIGHT) {
             // Right Click => paste
             List<Chunk> chunksToUpdate = new ArrayList<>();
 

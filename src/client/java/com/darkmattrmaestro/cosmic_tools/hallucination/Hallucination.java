@@ -4,9 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.darkmattrmaestro.cosmic_tools.Constants;
 import com.darkmattrmaestro.cosmic_tools.items.Spatula;
-import com.darkmattrmaestro.cosmic_tools.utils.Selection;
 import com.darkmattrmaestro.cosmic_tools.utils.Vector3Int;
 import finalforeach.cosmicreach.blocks.BlockPosition;
 import finalforeach.cosmicreach.gamestates.GameState;
@@ -53,7 +51,6 @@ public class Hallucination {
 
 //            for (int[] diff: new int[][]{{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 1, 0}, {1, 0, 1}, {0, 1, 1}, {1, 1, 1}})
             float dist = Math.max(0.01f, blockPosition.dst(InGame.getLocalPlayer().getPosition()));
-            Constants.LOGGER.warn("InvDist: {}", 10/dist);
             Gdx.gl.glLineWidth(10/dist);
             sr.begin(ShapeRenderer.ShapeType.Line);
             sr.setColor(border);

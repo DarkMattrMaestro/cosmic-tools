@@ -1,0 +1,59 @@
+package com.darkmattrmaestro.cosmic_tools.utils;
+
+import com.badlogic.gdx.InputProcessor;
+import com.darkmattrmaestro.cosmic_tools.items.Spatula;
+import finalforeach.cosmicreach.items.ItemStack;
+import finalforeach.cosmicreach.ui.UI;
+
+public class CosmicToolsInputProcessor implements InputProcessor {
+    @Override
+    public boolean keyDown (int keycode) { return false; }
+
+    @Override
+    public boolean keyUp (int keycode) {
+        return false;
+    }
+
+    @Override
+    public boolean keyTyped (char character) {
+        return false;
+    }
+
+    @Override
+    public boolean touchDown (int x, int y, int pointer, int button) {
+        try {
+            ItemStack selected = UI.hotbar.getSelectedItemStack();
+
+            if (selected != null && selected.getItem() instanceof Spatula) {
+                Spatula.onMousePressed(button);
+            }
+        } catch (Exception e) {}
+
+        return false;
+    }
+
+    @Override
+    public boolean touchUp (int x, int y, int pointer, int button) {
+        return false;
+    }
+
+    @Override
+    public boolean touchCancelled(int i, int i1, int i2, int i3) {
+        return false;
+    }
+
+    @Override
+    public boolean touchDragged (int x, int y, int pointer) {
+        return false;
+    }
+
+    @Override
+    public boolean mouseMoved (int x, int y) {
+        return false;
+    }
+
+    @Override
+    public boolean scrolled (float amountX, float amountY) {
+        return false;
+    }
+}
