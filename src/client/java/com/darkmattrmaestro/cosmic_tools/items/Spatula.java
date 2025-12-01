@@ -8,6 +8,7 @@ import finalforeach.cosmicreach.gameevents.blockevents.BlockEventTrigger;
 import finalforeach.cosmicreach.gamestates.InGame;
 
 import finalforeach.cosmicreach.blocks.BlockPosition;
+import finalforeach.cosmicreach.items.Item;
 import finalforeach.cosmicreach.networking.client.ClientNetworkManager;
 import finalforeach.cosmicreach.networking.packets.blocks.PlaceBlockPacket;
 import finalforeach.cosmicreach.util.Identifier;
@@ -131,6 +132,11 @@ public class Spatula extends AbstractCosmicItem {
     @Override
     public boolean isTool() {
         return true;
+    }
+
+    @Override
+    public boolean canMergeWith(Item item) {
+        return false;
     }
 
     @Override

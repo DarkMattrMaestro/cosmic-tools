@@ -1,0 +1,18 @@
+[
+  {
+    "inputs": [
+      {
+        "item": "base:battery_block",
+        "amount": 1
+      },
+      {
+        "item": "base:stick",
+        "amount": 2
+      }
+    ],
+    "output": {
+      "item": "cosmic_tools:spatula",
+      "amount": 1
+    }
+  }
+]

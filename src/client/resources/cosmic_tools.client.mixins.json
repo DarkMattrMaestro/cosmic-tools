@@ -4,7 +4,8 @@
   "package": "com.darkmattrmaestro.cosmic_tools.mixins",
   "compatibilityLevel": "JAVA_24",
   "mixins": [
-    "InGameMixin"
+    "InGameMixin",
+    "CraftingRecipesMixin"
   ],
   "client": [
   ],
