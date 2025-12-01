@@ -1,14 +1,13 @@
 package com.darkmattrmaestro.cosmic_tools.items;
 
 import com.badlogic.gdx.Input;
-import com.darkmattrmaestro.cosmic_tools.hallucination.Hallucination;
+import com.darkmattrmaestro.cosmic_tools.utils.Hallucination;
 import com.darkmattrmaestro.cosmic_tools.utils.*;
+import finalforeach.cosmicreach.audio.SoundManager;
+import finalforeach.cosmicreach.gameevents.blockevents.BlockEventTrigger;
 import finalforeach.cosmicreach.gamestates.InGame;
 
 import finalforeach.cosmicreach.blocks.BlockPosition;
-import finalforeach.cosmicreach.blocks.BlockState;
-import finalforeach.cosmicreach.items.Item;
-import finalforeach.cosmicreach.items.ItemStack;
 import finalforeach.cosmicreach.networking.client.ClientNetworkManager;
 import finalforeach.cosmicreach.networking.packets.blocks.PlaceBlockPacket;
 import finalforeach.cosmicreach.util.Identifier;
@@ -19,16 +18,17 @@ import com.darkmattrmaestro.cosmic_tools.Constants;
 import org.spongepowered.asm.mixin.Unique;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.lang.Math.abs;
+import static java.lang.Math.min;
 
 public class Spatula extends AbstractCosmicItem {
     public static float reachDist = 20.0f;
     public static BlockAxis blockAxis = null;
-//    public static Selection copySelection = null;
     public static Hallucination copyBlocks = new Hallucination();
+    public static String initialBlockID = "";
 
     public Spatula(){
         super(Identifier.of(Constants.MOD_ID, "spatula"));
@@ -37,21 +37,15 @@ public class Spatula extends AbstractCosmicItem {
 
     public static Hallucination getSelection(){
         int maxExpansion = 10;
-        blockAxis = BlockSelectionUtil.getBlockSideLookingAtFar(20);
+        blockAxis = BlockSelectionUtil.getBlockSideLookingAtFar(reachDist);
         if(blockAxis == null) return null;
 
-        List<String> primaryBlockIDs = Arrays.asList(
-                blockAxis.pos.getBlockState().getBlockId(),
-                "base:air",
-                null
-        );
+        initialBlockID = blockAxis.pos.getBlockState().getBlockId();
 
         copyBlocks = new Hallucination();
 
         Vector3Int minPos = new Vector3Int(blockAxis.pos.getGlobalX(), blockAxis.pos.getGlobalY(), blockAxis.pos.getGlobalZ());
         Vector3Int maxPos = minPos.cpy();
-
-        //--------------------------------------//
 
         // Add the initial block if it is not obstructed
         BlockPosition initialFrontBlockPos = BlockPosition.ofGlobal(
@@ -67,24 +61,16 @@ public class Spatula extends AbstractCosmicItem {
             }
         }
 
-//        Constants.LOGGER.warn("BlockAxis: {}", blockAxis.axis);
         // Iterate expansion amount
         boolean hasExpanded = true;
-        while (
-            hasExpanded
-//            && blockAxis.pos.getGlobalX() - minPos.x <= maxExpansion && blockAxis.pos.getGlobalY() - minPos.y <= maxExpansion && blockAxis.pos.getGlobalZ() - minPos.z <= maxExpansion
-//            && maxPos.x - blockAxis.pos.getGlobalX() <= maxExpansion && maxPos.y - blockAxis.pos.getGlobalY() <= maxExpansion && maxPos.z - blockAxis.pos.getGlobalZ() <= maxExpansion
-        ) {
+        while (hasExpanded) {
             hasExpanded = false;
-//            Constants.LOGGER.warn("Expanded: {}", expansion);
             // Iterate x, y, z, except the axis that is flat
             for (int i = 0; i < 3; i++) {
                 if (blockAxis.axis.toList()[i] != 0) { continue; }
-//                Constants.LOGGER.warn("   - Axis: {}", i);
 
                 // Iterate for min and max
                 for (int diff : new int[]{-1, 1}) {
-//                    Constants.LOGGER.warn("      - Diff: {}", diff);
                     Vector3Int currentPos = diff < 0 ? minPos : maxPos;
                     boolean match = false;
 
@@ -108,11 +94,10 @@ public class Spatula extends AbstractCosmicItem {
                         if (frontBlockPos.chunk() == null) { continue; }
 
                         if (blockPos.chunk() != null && frontBlockPos.chunk() != null) {
-//                            Constants.LOGGER.warn("      - BlockPos {} - {} {}", blockPos, blockAxis.pos.getBlockState().getBlockId().equals(blockPos.getBlockState().getBlockId()), blockPos.getBlockState().getBlockId());
                             // Check that at least one of the same block is in the new row
                             if (
                                     ( // Block is the same
-                                            blockAxis.pos.getBlockState().getBlockId().equals(blockPos.getBlockState().getBlockId())
+                                            initialBlockID.equals(blockPos.getBlockState().getBlockId())
                                     )
                                     && ( // There is space in front to paste
                                             frontBlockPos.getBlockState() == null
@@ -144,38 +129,31 @@ public class Spatula extends AbstractCosmicItem {
     }
 
     @Override
-    public String toString() {
-        return id.toString();
-    }
-
-    @Override
     public boolean isTool() {
         return true;
     }
 
     @Override
-    public boolean canTargetBlockForBreaking(BlockState blockState) {
-        return false;
-    }
-
-    @Override
-    public boolean canMergeWith(Item item) {
-        return false;
-    }
-
-    @Override
-    public float getEffectiveBreakingSpeed(ItemStack stack) {
-        return 0.0f;
-    }
-
-    @Override
-    public boolean isEffectiveBreaking(ItemStack itemStack, BlockState blockState) {
-        return true;
+    public String toString() {
+        return id.toString();
     }
 
     @Override
     public String getName() {
         return "Spatula";
+    }
+
+    public static boolean playerHasEnoughItems() {
+        AtomicInteger availableItems = new AtomicInteger();
+        InGame.getLocalPlayer().inventory.forEachSlot((itemSlot -> {
+            if (itemSlot.getItem() == null) { return; }
+
+            if (itemSlot.getItem().getID().equals(initialBlockID)) {
+                availableItems.addAndGet(itemSlot.getItemAmount());
+            }
+        }));
+
+        return copyBlocks.blocks.size() <= availableItems.get() || InGame.getLocalPlayer().gamemode.hasInfiniteItems();
     }
 
     @Unique
@@ -184,21 +162,63 @@ public class Spatula extends AbstractCosmicItem {
 
         if(button == Input.Buttons.RIGHT) {
             // Right Click => paste
-            List<Chunk> chunksToUpdate = new ArrayList<>();
+            if (playerHasEnoughItems()) {
+                if (!InGame.getLocalPlayer().gamemode.hasInfiniteItems()) {
+                    AtomicInteger consumedItems = new AtomicInteger(copyBlocks.blocks.size());
+                    InGame.getLocalPlayer().inventory.forEachSlot((itemSlot -> {
+                        if (itemSlot.getItem() == null) {
+                            return;
+                        }
 
-            Zone zone = InGame.getLocalPlayer().getZone();
-            for (BlockPosition blockPos: copyBlocks.blocks) {
-                Vector3Int hallucinatedPos = (new Vector3Int(blockPos.getGlobalX(), blockPos.getGlobalY(), blockPos.getGlobalZ())).add(Spatula.blockAxis.axis);
-                zone.setBlockState(blockPos.getBlockState(), hallucinatedPos.x, hallucinatedPos.y, hallucinatedPos.z);
-                Chunk c = zone.getChunkAtBlock(hallucinatedPos.x, hallucinatedPos.y, hallucinatedPos.z);
-                if (!chunksToUpdate.contains(c)) chunksToUpdate.add(c);
-                if (ClientNetworkManager.isConnected()) {
-                    BlockPosition frontBlockPos = BlockPosition.ofGlobal(zone, hallucinatedPos.x, hallucinatedPos.y, hallucinatedPos.z);
-                    ClientNetworkManager.sendAsClient(new PlaceBlockPacket(frontBlockPos, blockPos.getBlockState(), -1));
+                        if (itemSlot.getItem().getID().equals(initialBlockID)) {
+                            int minConsumed = min(consumedItems.get(), itemSlot.getItemAmount());
+                            itemSlot.addAmount(-minConsumed);
+                            consumedItems.addAndGet(-minConsumed);
+                        }
+                    }));
                 }
-            }
 
-            ChunkUtils.remesh(chunksToUpdate, zone);
+                List<Chunk> chunksToUpdate = new ArrayList<>();
+                String triggerName = "onPlace";
+
+                Zone zone = InGame.getLocalPlayer().getZone();
+                for (BlockPosition blockPos : copyBlocks.blocks) {
+                    BlockEventTrigger[] triggers = blockPos.getBlockState().getTrigger(triggerName);
+
+                    Vector3Int hallucinatedPos = (new Vector3Int(blockPos.getGlobalX(), blockPos.getGlobalY(), blockPos.getGlobalZ())).add(Spatula.blockAxis.axis);
+
+                    zone.setBlockState(blockPos.getBlockState(), hallucinatedPos.x, hallucinatedPos.y, hallucinatedPos.z);
+                    Chunk c = zone.getChunkAtBlock(hallucinatedPos.x, hallucinatedPos.y, hallucinatedPos.z);
+                    if (!chunksToUpdate.contains(c)) {
+                        chunksToUpdate.add(c);
+                    }
+
+                    if (ClientNetworkManager.isConnected()) {
+                        BlockPosition frontBlockPos = BlockPosition.ofGlobal(zone, hallucinatedPos.x, hallucinatedPos.y, hallucinatedPos.z);
+                        ClientNetworkManager.sendAsClient(new PlaceBlockPacket(frontBlockPos, blockPos.getBlockState(), -1));
+                    }
+
+//                    if (triggers != null) {
+//                        if (GameSingletons.isHost) {
+//                            BlockEventArgs args = new BlockEventArgs();
+//                            args.srcPlayer = InGame.getLocalPlayer();
+//                            args.srcBlockState = blockPos.getBlockState();
+//                            args.zone = zone;
+//                            args.blockPos = blockPos;
+//    //                        for (GameEventTrigger trigger: triggers) {
+//    //                            Constants.LOGGER.warn("Triggers: {}", trigger.getAction());
+//    //                        }
+//                            args.run(triggers);
+//                            args.runScheduledTriggers();
+//                        }
+//                    }
+                }
+
+                SoundManager.INSTANCE.playSound("cosmic_tools:sounds/items/spatula-place.ogg", 1, 1, 0);
+
+
+                ChunkUtils.remesh(chunksToUpdate, zone);
+            }
         }
         return true;
     }

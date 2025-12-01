@@ -13,11 +13,6 @@ public class BlockAxis {
         this.axis = axis;
     }
 
-    public BlockAxis(BlockAxis blockAxis) {
-        this.pos = blockAxis.pos;
-        this.axis = blockAxis.axis;
-    }
-
     @Override
     public String toString() {
         return pos + " axis(" + axis + ")";

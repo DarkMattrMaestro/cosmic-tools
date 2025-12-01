@@ -5,6 +5,7 @@ import finalforeach.cosmicreach.items.Item;
 import io.github.puzzle.cosmic.item.AbstractCosmicItem;
 import com.darkmattrmaestro.cosmic_tools.items.Spatula;
 
+@SuppressWarnings("unused")
 public class CosmicToolsPostinit implements ClientPostModInit {
     public static Item spatula;
     @Override

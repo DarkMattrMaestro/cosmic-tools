@@ -12,7 +12,6 @@ loom {
             sourceSet sourceSets.client
         }
     }
-    accessWidenerPath = file("src/main/resources/cosmic_tools.manipulator")
 }
 
 repositories {

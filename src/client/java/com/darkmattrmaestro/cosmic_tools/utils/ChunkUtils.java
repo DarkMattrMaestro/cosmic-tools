@@ -7,6 +7,9 @@ import finalforeach.cosmicreach.world.Zone;
 
 import java.util.List;
 
+/**
+ * This class was originally part of nab138's <a href="https://github.com/nab138/Ecliptic">Ecliptic</a> mod, licensed under the MIT license.
+ */
 public class ChunkUtils {
     private static final LightPropagator lightProp = new LightPropagator();
 
