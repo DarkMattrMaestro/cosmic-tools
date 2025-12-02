@@ -12,14 +12,20 @@ import finalforeach.cosmicreach.gamestates.InGame;
 import finalforeach.cosmicreach.blocks.BlockPosition;
 import finalforeach.cosmicreach.blocks.BlockState;
 
+/**
+ * The <code>BlockSelectionUtil</code> provides utility functions that relate to the determination of the currently selected block.
+ */
 public class BlockSelectionUtil {
     /**
+     * <p>
      * Check if there is a block collision within the given max distance.
-     * <br>
-     * See http://www.cse.yorku.ca/~amana/research/grid.pdf for the voxel iteration method.
+     * </p>
+     * <p>
+     * See <a href="http://www.cse.yorku.ca/~amana/research/grid.pdf">http://www.cse.yorku.ca/~amana/research/grid.pdf</a> for the voxel iteration method.
+     * </p>
      *
-     * @param maxDist
-     * @return
+     * @param maxDist the maximum reach distance of the player. This equates to the maximal length of the ray projected from the player.
+     * @return <code>true</code> if a block collision occurs within the given <code>maxDist</code>, else <code>false</code>
      */
     public static boolean doesCollideFar(float maxDist) {
         if (GameState.currentGameState.getClass() != InGame.class) { return false; }
@@ -127,12 +133,15 @@ public class BlockSelectionUtil {
     }
 
     /**
+     * <p>
      * Return the block position and axis of the nearest collision with the ray cast from the player's view direction.
-     * <br>
-     * See http://www.cse.yorku.ca/~amana/research/grid.pdf for the voxel iteration method.
+     * </p>
+     * <p>
+     * See <a href="http://www.cse.yorku.ca/~amana/research/grid.pdf">http://www.cse.yorku.ca/~amana/research/grid.pdf</a> for the voxel iteration method.
+     * </p>
      *
-     * @param maxDist
-     * @return
+     * @param maxDist the maximum reach distance of the player. This equates to the maximal length of the ray projected from the player.
+     * @return the block position and axis of the collided block
      */
     public static BlockAxis getBlockSideLookingAtFar(float maxDist) {
         if (GameState.currentGameState.getClass() != InGame.class) { return null; }
@@ -197,7 +206,7 @@ public class BlockSelectionUtil {
                 return null;
             }
             BlockState blockAdj = blockPosAdj.getBlockState();
-            if (blockAdj != null) {// && !blockAdj.walkThrough && (blockAdj.isOpaque || blockAdj.hasTag(TAG_STOPS_LASERS))) {
+            if (blockAdj != null) {
                 // Get main AABB of block and check for collision
                 BoundingBox mainAABB = new BoundingBox();
                 blockAdj.getBoundingBox(mainAABB, x, y, z);
@@ -205,7 +214,6 @@ public class BlockSelectionUtil {
                     // Get sub AABBs and check individually for collisions
                     Array<BoundingBox> subAABBs = new Array<>(BoundingBox.class);
 
-                    Array<BoundingBox> tmpBlockBoundingBoxes = new Array<BoundingBox>();
                     blockAdj.getAllBoundingBoxes(subAABBs, x, y, z);
                     for (BoundingBox subAABB : subAABBs) {
                         if (CustomGameMath.rayAABBTest(ray, subAABB, maxDist)) {
@@ -213,7 +221,6 @@ public class BlockSelectionUtil {
                             blockAxis.pos = BlockPosition.ofGlobal(InGame.getLocalPlayer().getZone(), x, y, z);
 
                             double dist = CustomGameMath.rayAABBTest(ray, subAABB);
-//                            Constants.LOGGER.warn("closestCollision: {} dist: {}", closestCollision, dist);
                             if (dist < closestCollision && !(subAABB.getWidth() == 0 || subAABB.getHeight() == 0 || subAABB.getDepth() == 0)) {
                                 closestCollision = dist;
 

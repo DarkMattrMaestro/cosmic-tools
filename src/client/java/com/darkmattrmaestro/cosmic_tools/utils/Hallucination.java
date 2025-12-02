@@ -12,6 +12,9 @@ import finalforeach.cosmicreach.gamestates.InGame;
 import java.util.ArrayList;
 import java.util.Objects;
 
+/**
+ * Representation of blocks that do not yet exist, that are rendered as ghostly blocks.
+ */
 public class Hallucination {
     public ArrayList<BlockPosition> blocks = new ArrayList<BlockPosition>();
 

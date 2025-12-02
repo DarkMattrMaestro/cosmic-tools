@@ -4,6 +4,9 @@ import com.badlogic.gdx.math.*;
 
 import java.io.Serializable;
 
+/**
+ * A <code>Vector3</code> that uses integers instead of floating-point numbers.
+ */
 public class Vector3Int implements Serializable {
         public int x;
         public int y;

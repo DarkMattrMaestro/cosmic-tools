@@ -33,7 +33,7 @@ public class InGameMixin {
 
         if(selected != null && selected.getItem() instanceof Spatula) {
             // Spatula Paste Highlighting
-            if (Spatula.getSelection() != null) {
+            if (Spatula.getHallucination() != null) {
                 Spatula.copyBlocks.draw(cosmictools$sr2, Spatula.blockAxis.axis.toVector3(), Spatula.playerHasEnoughItems() ? new Color(0.64f, 0.64f, 0.64f, 1f) : new Color(1f, 0.2f, 0.2f, 1f));
             }
         }

@@ -25,6 +25,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static java.lang.Math.abs;
 import static java.lang.Math.min;
 
+/**
+ * <p>
+ * A spatula (or a wand) item that copies semi-contiguous patterns of similar blocks to the block in front of the
+ * selected face.
+ * </p>
+ * <p>
+ * Spatulas tend to be used for spreading things, and I imagine this tool is spreading blocks on the previous layer of
+ * blocks. This is the reason for the name that, in retrospect, is slightly odd.
+ * </p>
+ */
 public class Spatula extends AbstractCosmicItem {
     public static float reachDist = 20.0f;
     public static BlockAxis blockAxis = null;
@@ -36,7 +46,22 @@ public class Spatula extends AbstractCosmicItem {
         addTexture(ItemModelType.ITEM_MODEL_3D, Identifier.of(Constants.MOD_ID, "spatula.png"));
     }
 
-    public static Hallucination getSelection(){
+    /**
+     * <p>
+     * Return the hallucination formed from the largest semi-contiguous set of blocks that are similar to the player's
+     * actively selected block.
+     * </p>
+     * <p>
+     * The plane along which to expand is determined according to the block face with which the ray from the player
+     * collided. The targeted block is set as the minimum and maximum block, then the minimum and maximum are
+     * iteratively decreased and increased, respectively. Each block in the row that might be added (plus one block on
+     * either end to allow diagonal expansion) is checked for valid placement conditions and, if at least one block is
+     * valid, the respective extremum is expanded.
+     * </p>
+     *
+     * @return the hallucination of the blocks to be copied
+     */
+    public static Hallucination getHallucination(){
         int maxExpansion = 10;
         blockAxis = BlockSelectionUtil.getBlockSideLookingAtFar(reachDist);
         if(blockAxis == null) return null;
@@ -149,6 +174,11 @@ public class Spatula extends AbstractCosmicItem {
         return "Spatula";
     }
 
+    /**
+     * Check that the player has enough of the correct item to paste all the hallucinated blocks.
+     *
+     * @return <code>true</code> if the player has enough blocks, else <code>false</code>
+     */
     public static boolean playerHasEnoughItems() {
         AtomicInteger availableItems = new AtomicInteger();
         InGame.getLocalPlayer().inventory.forEachSlot((itemSlot -> {
