@@ -1,4 +1,4 @@
-package com.darkmattrmaestro.cosmic_tools.mixins;
+package com.darkmattrmaestro.cosmic_tools.mixins.common;
 
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.utils.*;

@@ -1,0 +1,43 @@
+{
+  "formatVersion": 3,
+  "display-name": "${p_name}",
+  "id": "${p_id}",
+  "version": "${p_version}",
+  "description": "${p_desc}",
+  "authors": [
+    "${p_author}"
+  ],
+  "can-load-on": {
+    "client": true,
+    "server": true
+  },
+  "meta": {
+    "icon": "${p_id}:icons/icon.png"
+  },
+  "entrypoints": {
+    "client-postInit": "${p_group}.ClientCosmicToolsMod"
+
+//    "preInit": "${p_group}.PreInitExampleMod",
+//    "init": "${p_group}.InitExampleMod",
+//    "postInit": "${p_group}.PostInitExampleMod",
+//
+//    "server-init": "${p_group}.ServerExampleMod"
+  },
+  "mixins": [
+    "${p_id}.common.mixins.json",
+    {
+      "config": "${p_id}.client.mixins.json",
+      "environment": "client"
+    },
+    {
+      "config": "${p_id}.server.mixins.json",
+      "environment": "server"
+    }
+  ],
+  "depends": {
+    "cosmic-reach": ">=${cosmic_reach_version}",
+    "puzzle-loader-cosmic": ">=${puzzle_loader_cosmic_version}",
+    "puzzle-loader-core": ">=${puzzle_loader_core_version}",
+    "cosmic-api": ">=${cosmic_api_version}"
+  }
+}

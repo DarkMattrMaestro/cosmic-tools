@@ -1,4 +1,4 @@
-package com.darkmattrmaestro.cosmic_tools.mixins;
+package com.darkmattrmaestro.cosmic_tools.mixins.client;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputMultiplexer;
