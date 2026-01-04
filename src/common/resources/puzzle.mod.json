@@ -18,7 +18,7 @@
     "client-postInit": "${p_group}.ClientCosmicToolsMod"
 
 //    "preInit": "${p_group}.PreInitExampleMod",
-//    "init": "${p_group}.InitExampleMod",
+    "init": "${p_group}.CosmicToolsInit"
 //    "postInit": "${p_group}.PostInitExampleMod",
 //
 //    "server-init": "${p_group}.ServerExampleMod"

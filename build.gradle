@@ -40,7 +40,12 @@ processCommonResources {
 
             "p_id": p_id,
             "p_group": p_group,
-            "p_author": p_author
+            "p_author": p_author,
+
+            "cosmic_reach_version": cosmic_reach_version,
+            "puzzle_loader_cosmic_version": puzzle_loader_cosmic_version,
+            "puzzle_loader_core_version": puzzle_loader_core_version,
+            "cosmic_api_version": cosmic_api_version
     ]
 
     inputs.properties projectProperties
@@ -53,4 +58,10 @@ processCommonResources {
 wrapper {
     gradleVersion = "8.14"
     distributionType = Wrapper.DistributionType.ALL
+}
+
+afterEvaluate {
+    tasks.named("runModdedClient") {
+        environment "ITCHIO_API_KEY", itch_api_key
+    }
 }

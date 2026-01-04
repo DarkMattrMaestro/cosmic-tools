@@ -1,6 +1,5 @@
 package com.darkmattrmaestro.cosmic_tools.utils;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -8,13 +7,14 @@ import com.badlogic.gdx.math.Vector3;
 import finalforeach.cosmicreach.blocks.BlockPosition;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Objects;
 
 /**
  * Representation of blocks that do not yet exist, that are rendered as ghostly blocks.
  */
 public class Hallucination {
-    public ArrayList<BlockPosition> blocks = new ArrayList<BlockPosition>();
+    public HashSet<BlockPosition> blocks = new HashSet<BlockPosition>();
 
     public static final Color borderColor = new Color(0.64f, 0.64f, 0.64f, 1);
 
@@ -26,7 +26,7 @@ public class Hallucination {
 
     }
 
-    public Hallucination(ArrayList<BlockPosition> blocks) {
+    public Hallucination(HashSet<BlockPosition> blocks) {
         this.blocks = blocks;
     }
 

@@ -4,27 +4,17 @@ buildscript {
             name = "JitPack"
             url = "https://jitpack.io"
         }
-//        maven {
-//            name = 'Fabric'
-//            url = 'https://maven.fabricmc.net/'
-//        }
         maven {
-            name "Puzzles Releases"
-            url "https://maven.puzzleshq.dev/releases/"
+            name = "Puzzles Releases"
+            url = "https://maven.puzzleshq.dev/releases/"
         }
         mavenCentral()
         mavenLocal()
         gradlePluginPortal()
     }
     dependencies {
-//        classpath "com.gradleup.shadow:shadow-gradle-plugin:8.3.3"
-//        classpath "com.github.PuzzlesHQ.jigsaw:jigsaw:$jigsaw_gradle_version"
         classpath("dev.puzzleshq:jigsaw-suite:$puzzle_jigsaw_suite")
-//        classpath ("com.github.PuzzlesHQ:jigsaw-suite:$puzzle_jigsaw_suite_version") {
-//            changing: true
-//        }
     }
 }
 
 rootProject.name = p_id
-
