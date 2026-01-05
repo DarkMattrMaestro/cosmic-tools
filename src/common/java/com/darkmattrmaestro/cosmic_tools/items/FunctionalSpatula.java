@@ -2,6 +2,7 @@ package com.darkmattrmaestro.cosmic_tools.items;
 
 import com.darkmattrmaestro.cosmic_tools.utils.BlockAxis;
 import com.darkmattrmaestro.cosmic_tools.utils.Hallucination;
+import com.darkmattrmaestro.cosmic_tools.utils.ItemBlockComparison;
 import com.darkmattrmaestro.cosmic_tools.utils.Offset;
 import finalforeach.cosmicreach.blocks.BlockPosition;
 import finalforeach.cosmicreach.entities.player.Player;
@@ -40,7 +41,7 @@ public class FunctionalSpatula {
         player.inventory.forEachSlot(((ItemSlot itemSlot) -> {
             if (itemSlot.getItem() == null) { return; }
 
-            if (itemSlot.getItem().getID().equals(this.initialBlockID)) {
+            if (ItemBlockComparison.compareItemBlockID(itemSlot.getItem(), this.initialBlockID)) {
                 availableItems.addAndGet(itemSlot.getItemAmount());
             }
         }));

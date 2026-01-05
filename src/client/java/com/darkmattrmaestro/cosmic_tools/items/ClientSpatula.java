@@ -57,7 +57,7 @@ public class ClientSpatula extends FunctionalSpatula {
                             return;
                         }
 
-                        if (itemSlot.getItem().getID().equals(clientSpatula.initialBlockID)) {
+                        if (ItemBlockComparison.compareItemBlockID(itemSlot.getItem(), clientSpatula.initialBlockID)) {
                             int minConsumed = Math.min(consumedItems.get(), itemSlot.getItemAmount());
                             itemSlot.addAmount(-minConsumed);
                             consumedItems.addAndGet(-minConsumed);
