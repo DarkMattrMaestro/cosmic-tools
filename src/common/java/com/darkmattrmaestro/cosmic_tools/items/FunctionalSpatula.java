@@ -1,9 +1,8 @@
 package com.darkmattrmaestro.cosmic_tools.items;
 
 import com.darkmattrmaestro.cosmic_tools.utils.BlockAxis;
-import com.darkmattrmaestro.cosmic_tools.utils.BlockMappings;
 import com.darkmattrmaestro.cosmic_tools.utils.Hallucination;
-import com.darkmattrmaestro.cosmic_tools.utils.Vector3Int;
+import com.darkmattrmaestro.cosmic_tools.utils.Offset;
 import finalforeach.cosmicreach.blocks.BlockPosition;
 import finalforeach.cosmicreach.entities.player.Player;
 import finalforeach.cosmicreach.items.ItemSlot;
@@ -18,7 +17,7 @@ public class FunctionalSpatula {
     int maxExpansion = 10;
     public BlockAxis blockAxis = null;
     public Hallucination copyBlocks = new Hallucination();
-    public static String initialBlockID = "";
+    public String initialBlockID = "";
 
     public FunctionalSpatula(String itemID) {
         super();
@@ -41,7 +40,7 @@ public class FunctionalSpatula {
         player.inventory.forEachSlot(((ItemSlot itemSlot) -> {
             if (itemSlot.getItem() == null) { return; }
 
-            if (itemSlot.getItem().getID().equals(initialBlockID)) {
+            if (itemSlot.getItem().getID().equals(this.initialBlockID)) {
                 availableItems.addAndGet(itemSlot.getItemAmount());
             }
         }));
@@ -67,98 +66,70 @@ public class FunctionalSpatula {
     public Hallucination getHallucination(Player player, BlockAxis blockAxis){
         this.blockAxis = blockAxis;
 
-        initialBlockID = blockAxis.pos.getBlockState().getBlockId();
+        this.initialBlockID = blockAxis.pos.getBlockState().getBlockId();
 
-        copyBlocks = new Hallucination();
+        this.copyBlocks = new Hallucination();
 
-        Vector3Int minPos = new Vector3Int(blockAxis.pos.getGlobalX(), blockAxis.pos.getGlobalY(), blockAxis.pos.getGlobalZ());
-        Vector3Int maxPos = minPos.cpy();
+        // Flood Fill
+        Stack<BlockPosition> stack = new Stack<BlockPosition>();
+        stack.push(blockAxis.pos);
+        while (!stack.isEmpty()) {
+            BlockPosition blockPos = stack.pop();
 
-        // Add the initial block if it is not obstructed
-        BlockPosition initialFrontBlockPos = BlockPosition.ofGlobal(
-                player.getZone(),
-                blockAxis.pos.getGlobalX() + blockAxis.axis.x,
-                blockAxis.pos.getGlobalY() + blockAxis.axis.y,
-                blockAxis.pos.getGlobalZ() + blockAxis.axis.z
-        );
-        if (blockAxis.pos.chunk() != null && initialFrontBlockPos.chunk() != null) {
-            // Check that at least one of the same block is in the new row
-            if (initialFrontBlockPos.getBlockState() == null || "base:air".equals(initialFrontBlockPos.getBlockState().getBlockId())) {
-                copyBlocks.blocks.add(blockAxis.pos);
+            if (// Ensure that the block is within range
+                    abs(blockAxis.pos.getGlobalX() - blockPos.getGlobalX()) > this.maxExpansion
+                    || abs(blockAxis.pos.getGlobalY() - blockPos.getGlobalY()) > this.maxExpansion
+                    || abs(blockAxis.pos.getGlobalZ() - blockPos.getGlobalZ()) > this.maxExpansion
+            ) { continue; }
+
+            if (this.copyBlocks.blocks.contains(blockPos) || !canPlace(player, blockPos)) {
+                continue;
             }
-        }
-        if (copyBlocks.blocks.isEmpty()) {
-            return copyBlocks;
-        }
 
-//        // Flood Fill
-//        Stack<BlockPosition> stack = new Stack<BlockPosition>();
-//        stack.push(blockAxis.pos);
+            this.copyBlocks.blocks.add(blockPos);
 
-        // Iterate expansion amount
-        boolean hasExpanded = true;
-        while (hasExpanded) {
-            hasExpanded = false;
-            // Iterate x, y, z, except the axis that is flat
-            for (int i = 0; i < 3; i++) {
-                if (blockAxis.axis.toList()[i] != 0) { continue; }
-
-                // Iterate for min and max
-                for (int diff : new int[]{-1, 1}) {
-                    Vector3Int currentPos = diff < 0 ? minPos : maxPos;
-                    boolean match = false;
-
-                    // Iterate for each block in the line that is to be added
-                    int lineLength = (i != 0 ? maxPos.x - minPos.x : 0) + (i != 1 ? maxPos.y - minPos.y : 0) + (i != 2 ? maxPos.z - minPos.z : 0);
-                    for (int j = -1; j <= lineLength + 1; j++) {
-                        BlockPosition blockPos = BlockPosition.ofGlobal(
-                                player.getZone(),
-                                i == 0 ? currentPos.x + diff : (blockAxis.axis.toList()[0] == 0 ? minPos.x + j : currentPos.x),
-                                i == 1 ? currentPos.y + diff : (blockAxis.axis.toList()[1] == 0 ? minPos.y + j : currentPos.y),
-                                i == 2 ? currentPos.z + diff : (blockAxis.axis.toList()[2] == 0 ? minPos.z + j : currentPos.z)
-                        );
-                        if (blockPos.chunk() == null) { continue; }
-
-                        BlockPosition frontBlockPos = BlockPosition.ofGlobal(
-                                player.getZone(),
-                                blockPos.getGlobalX() + blockAxis.axis.x,
-                                blockPos.getGlobalY() + blockAxis.axis.y,
-                                blockPos.getGlobalZ() + blockAxis.axis.z
-                        );
-                        if (frontBlockPos.chunk() == null) { continue; }
-
-                        if (blockPos.chunk() != null && frontBlockPos.chunk() != null) {
-                            // Check that at least one of the same block is in the new row
-                            if (
-                                    ( // Block is the same
-                                            initialBlockID.equals(blockPos.getBlockState().getBlockId())
-                                    )
-                                            && ( // There is space in front to paste
-                                            frontBlockPos.getBlockState() == null
-                                                    || "base:air".equals(frontBlockPos.getBlockState().getBlockId())
-                                    )
-                                            && ( // The block is within range
-                                            abs(blockAxis.pos.getGlobalX() - blockPos.getGlobalX()) <= this.maxExpansion
-                                                    && abs(blockAxis.pos.getGlobalY() - blockPos.getGlobalY()) <= this.maxExpansion
-                                                    && abs(blockAxis.pos.getGlobalZ() - blockPos.getGlobalZ()) <= this.maxExpansion
-                                    )
-                            ) {
-                                copyBlocks.blocks.add(blockPos);
-                                hasExpanded = true;
-                                match = true;
-                            }
-                        }
-                    }
-
-                    if (match) {
-                        int[] diffPos = new int[]{0, 0, 0};
-                        diffPos[i] += diff;
-                        currentPos.add(diffPos);
-                    }
-                }
+            for (Offset offset: Offset.CoplanarWith(Offset.AXIAL, this.blockAxis.axis)) {
+                stack.push(BlockPosition.ofGlobal(player.getZone(), blockPos.getGlobalX() + offset.getXOffset(), blockPos.getGlobalY() + offset.getYOffset(), blockPos.getGlobalZ() + offset.getZOffset()));
             }
         }
 
         return copyBlocks;
+    }
+
+    public boolean canPlace(Player player, BlockPosition blockPosition) {
+        BlockPosition blockPos = blockPosition.copy();
+        if (blockPos.chunk == null) {
+            blockPos.convertToLocal(player.getZone());
+        }
+
+        BlockPosition frontBlockPos = blockPos.getOffsetBlockPos(
+                player.getZone(),
+                this.blockAxis.axis.x,
+                this.blockAxis.axis.y,
+                this.blockAxis.axis.z
+        );
+        if (frontBlockPos.chunk() == null) {
+            frontBlockPos.convertToLocal(player.getZone(), true);
+        }
+
+        if (blockPos.chunk() != null && frontBlockPos.chunk() != null) {
+            // Check if at least one of the same block is in the new row
+            return (
+                    ( // Block is the same
+                            this.initialBlockID.equals(blockPos.getBlockState().getBlockId())
+                    )
+                    && ( // There is space in front to paste
+                            frontBlockPos.getBlockState() == null
+                            || "base:air".equals(frontBlockPos.getBlockState().getBlockId())
+                    )
+                    && ( // The block is within range
+                            abs(this.blockAxis.pos.getGlobalX() - blockPos.getGlobalX()) <= this.maxExpansion
+                            && abs(this.blockAxis.pos.getGlobalY() - blockPos.getGlobalY()) <= this.maxExpansion
+                            && abs(this.blockAxis.pos.getGlobalZ() - blockPos.getGlobalZ()) <= this.maxExpansion
+                    )
+            );
+        }
+
+        return false;
     }
 }
