@@ -1,9 +1,11 @@
 package com.darkmattrmaestro.cosmic_tools.utils;
 
 import com.badlogic.gdx.InputProcessor;
-import com.darkmattrmaestro.cosmic_tools.items.Spatula;
+import com.darkmattrmaestro.cosmic_tools.Constants;
+import com.darkmattrmaestro.cosmic_tools.items.ClientSpatula;
 import finalforeach.cosmicreach.items.ItemStack;
 import finalforeach.cosmicreach.ui.UI;
+import finalforeach.cosmicreach.util.Identifier;
 
 public class CosmicToolsInputProcessor implements InputProcessor {
     @Override
@@ -21,15 +23,17 @@ public class CosmicToolsInputProcessor implements InputProcessor {
 
     @Override
     public boolean touchDown (int x, int y, int pointer, int button) {
+        Constants.LOGGER.warn("Pressed {}", button);
+        boolean blockInput = false;
         try {
             ItemStack selected = UI.hotbar.getSelectedItemStack();
 
-            if (selected != null && selected.getItem() instanceof Spatula) {
-                Spatula.onMousePressed(button);
+            if(selected != null && Identifier.of(Constants.MOD_ID, "spatula").toString().equals(selected.getItem().getID())) {
+                blockInput |= ClientSpatula.onMousePressed(button);
             }
         } catch (Exception e) {}
 
-        return false;
+        return blockInput;
     }
 
     @Override

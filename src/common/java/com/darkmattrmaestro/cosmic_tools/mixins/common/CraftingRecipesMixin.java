@@ -1,4 +1,4 @@
-package com.darkmattrmaestro.cosmic_tools.mixins;
+package com.darkmattrmaestro.cosmic_tools.mixins.common;
 
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.utils.*;
@@ -19,15 +19,15 @@ public class CraftingRecipesMixin {
 
     @Inject(method = "loadCraftingRecipes", at = @At(value = "TAIL"))
     private static void loadCraftingRecipes(Queue<Runnable> loadingQueue, CallbackInfo ci) {
-        Json json = new Json();
-        loadingQueue.addLast((Runnable)() -> {
-            try {
-                FileHandle spatulaHandle = GameAssetLoader.loadAsset("cosmic_tools:recipes/crafting/tools/spatula.json");
-                JsonValue spatulaJson = GameAssetLoader.loadJson(spatulaHandle);
-                loadRecipe(Identifier.of(Constants.MOD_ID, "spatula"), json, spatulaJson);
-            } catch (Exception ex) {
-                throw new RuntimeException("Error parsing recipes: " + "cosmic_tools:recipes/crafting/tools/spatula.json", ex);
-            }
-        });
+//        Json json = new Json();
+//        loadingQueue.addLast((Runnable)() -> {
+//            try {
+//                FileHandle spatulaHandle = GameAssetLoader.loadAsset("cosmic_tools:recipes/crafting/tools/spatula.json");
+//                JsonValue spatulaJson = GameAssetLoader.loadJson(spatulaHandle);
+//                loadRecipe(Identifier.of(Constants.MOD_ID, "spatula"), json, spatulaJson);
+//            } catch (Exception ex) {
+//                throw new RuntimeException("Error parsing recipes: " + "cosmic_tools:recipes/crafting/tools/spatula.json", ex);
+//            }
+//        });
     }
 }

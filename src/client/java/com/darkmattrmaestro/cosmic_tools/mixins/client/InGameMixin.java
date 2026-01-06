@@ -1,15 +1,19 @@
-package com.darkmattrmaestro.cosmic_tools.mixins;
+package com.darkmattrmaestro.cosmic_tools.mixins.client;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.darkmattrmaestro.cosmic_tools.Constants;
+import com.darkmattrmaestro.cosmic_tools.items.ClientSpatula;
+import com.darkmattrmaestro.cosmic_tools.utils.ClientHallucination;
 import com.darkmattrmaestro.cosmic_tools.utils.CosmicToolsInputProcessor;
+import finalforeach.cosmicreach.gamestates.GameState;
 import finalforeach.cosmicreach.gamestates.InGame;
 import finalforeach.cosmicreach.items.ItemStack;
 import finalforeach.cosmicreach.ui.UI;
-import com.darkmattrmaestro.cosmic_tools.items.Spatula;
+import finalforeach.cosmicreach.util.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -31,10 +35,12 @@ public class InGameMixin {
 
         ItemStack selected = UI.hotbar.getSelectedItemStack();
 
-        if(selected != null && selected.getItem() instanceof Spatula) {
+        if(selected != null && Identifier.of(Constants.MOD_ID, "spatula").toString().equals(selected.getItem().getID())) {
             // Spatula Paste Highlighting
-            if (Spatula.getHallucination() != null) {
-                Spatula.copyBlocks.draw(cosmictools$sr2, Spatula.blockAxis.axis.toVector3(), Spatula.playerHasEnoughItems() ? new Color(0.64f, 0.64f, 0.64f, 1f) : new Color(1f, 0.2f, 0.2f, 1f));
+            ClientSpatula clientSpatula = new ClientSpatula(selected.getItem().getID());
+            if (GameState.currentGameState.getClass() == InGame.class && clientSpatula.getHallucination(InGame.getLocalPlayer()) != null) {
+                Color colour = clientSpatula.playerHasEnoughItems(InGame.getLocalPlayer()) ? new Color(0.64f, 0.64f, 0.64f, 1f) : new Color(1f, 0.2f, 0.2f, 1f);
+                ClientHallucination.draw(clientSpatula.copyBlocks, cosmictools$sr2, clientSpatula.blockAxis.axis.toVector3(), colour);
             }
         }
 
