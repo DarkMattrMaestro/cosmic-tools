@@ -1,6 +1,7 @@
 package com.darkmattrmaestro.cosmic_tools;
 
 import com.badlogic.gdx.utils.Json;
+import com.darkmattrmaestro.cosmic_tools.items.Scythe;
 import com.darkmattrmaestro.cosmic_tools.items.Spatula;
 import com.darkmattrmaestro.cosmic_tools.packets.PasteBlocksPacket;
 import dev.puzzleshq.puzzleloader.cosmic.game.GameRegistries;
@@ -28,6 +29,13 @@ public class CosmicToolsInit implements ModInit {
             GamePacket.registerPacket(PasteBlocksPacket.class);
 
             CraftingRecipes.loadRecipe(Identifier.of(Constants.MOD_ID, "recipes/crafting/tools/spatula.json"), new Json(), GameAssetLoader.loadJson(Identifier.of(Constants.MOD_ID, "recipes/crafting/tools/spatula.json")));
+        });
+
+        event.registerToQueue(() -> {
+            AbstractCosmicItem.register(new Scythe());
+//            GamePacket.registerPacket(PasteBlocksPacket.class);
+
+//            CraftingRecipes.loadRecipe(Identifier.of(Constants.MOD_ID, "recipes/crafting/tools/spatula.json"), new Json(), GameAssetLoader.loadJson(Identifier.of(Constants.MOD_ID, "recipes/crafting/tools/spatula.json")));
         });
     }
 }

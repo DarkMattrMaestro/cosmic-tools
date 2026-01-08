@@ -1,1 +1,7 @@
 public method finalforeach/cosmicreach/items/recipes/CraftingRecipes loadRecipe (Lfinalforeach/cosmicreach/util/Identifier;Lcom/badlogic/gdx/utils/Json;Lcom/badlogic/gdx/utils/JsonValue;)V
+
+public field finalforeach/cosmicreach/gameevents/GameEventTrigger condition
+public field finalforeach/cosmicreach/gameevents/commonactions/GameActionLootDrop lootId
+public field finalforeach/cosmicreach/items/loot/Loot options
+public field finalforeach/cosmicreach/items/loot/LootOption lootStacks
+public field finalforeach/cosmicreach/items/loot/LootStack item

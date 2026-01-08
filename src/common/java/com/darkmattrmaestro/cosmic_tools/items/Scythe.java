@@ -1,11 +1,10 @@
 package com.darkmattrmaestro.cosmic_tools.items;
 
-import com.darkmattrmaestro.cosmic_tools.utils.*;
-
+import com.darkmattrmaestro.cosmic_tools.Constants;
+import finalforeach.cosmicreach.blocks.BlockState;
 import finalforeach.cosmicreach.items.Item;
 import finalforeach.cosmicreach.util.Identifier;
 import io.github.puzzle.cosmic.item.AbstractCosmicItem;
-import com.darkmattrmaestro.cosmic_tools.Constants;
 
 /**
  * <p>
@@ -17,16 +16,21 @@ import com.darkmattrmaestro.cosmic_tools.Constants;
  * blocks. This is the reason for the name that, in retrospect, is slightly odd.
  * </p>
  */
-public class Spatula extends AbstractCosmicItem {
+public class Scythe extends AbstractCosmicItem {
 
-    public Spatula(){
-        super(Identifier.of(Constants.MOD_ID, "spatula"));
-        addTexture(ItemModelType.ITEM_MODEL_3D, Identifier.of(Constants.MOD_ID, "spatula.png"));
+    public Scythe(){
+        super(Identifier.of(Constants.MOD_ID, "scythe"));
+        addTexture(ItemModelType.ITEM_MODEL_3D, Identifier.of(Constants.MOD_ID, "scythe.png"));
     }
 
     @Override
     public boolean isTool() {
         return true;
+    }
+
+    @Override
+    public boolean canTargetBlockForBreaking(BlockState blockState) {
+        return false;
     }
 
     @Override
@@ -41,6 +45,6 @@ public class Spatula extends AbstractCosmicItem {
 
     @Override
     public String getName() {
-        return "Spatula";
+        return "Scythe";
     }
 }

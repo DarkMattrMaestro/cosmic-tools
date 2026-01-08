@@ -7,11 +7,13 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.darkmattrmaestro.cosmic_tools.Constants;
 import com.darkmattrmaestro.cosmic_tools.items.ClientSpatula;
+import com.darkmattrmaestro.cosmic_tools.utils.BlockSelectionUtil;
 import com.darkmattrmaestro.cosmic_tools.utils.ClientHallucination;
 import com.darkmattrmaestro.cosmic_tools.utils.CosmicToolsInputProcessor;
 import finalforeach.cosmicreach.gamestates.GameState;
 import finalforeach.cosmicreach.gamestates.InGame;
 import finalforeach.cosmicreach.items.ItemStack;
+import finalforeach.cosmicreach.ui.InGameUI;
 import finalforeach.cosmicreach.ui.UI;
 import finalforeach.cosmicreach.util.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
@@ -35,7 +37,7 @@ public class InGameMixin {
 
         ItemStack selected = UI.hotbar.getSelectedItemStack();
 
-        if(selected != null && Identifier.of(Constants.MOD_ID, "spatula").toString().equals(selected.getItem().getID())) {
+        if(selected != null && BlockSelectionUtil.isInActiveGame() && Identifier.of(Constants.MOD_ID, "spatula").toString().equals(selected.getItem().getID())) {
             // Spatula Paste Highlighting
             ClientSpatula clientSpatula = new ClientSpatula(selected.getItem().getID());
             if (GameState.currentGameState.getClass() == InGame.class && clientSpatula.getHallucination(InGame.getLocalPlayer()) != null) {

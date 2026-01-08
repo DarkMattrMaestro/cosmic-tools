@@ -11,6 +11,7 @@ import finalforeach.cosmicreach.gamestates.InGame;
 
 import finalforeach.cosmicreach.blocks.BlockPosition;
 import finalforeach.cosmicreach.blocks.BlockState;
+import finalforeach.cosmicreach.ui.UI;
 
 /**
  * The <code>BlockSelectionUtil</code> provides utility functions that relate to the determination of the currently selected block.
@@ -221,15 +222,15 @@ public class BlockSelectionUtil {
                             blockAxis.pos = BlockPosition.ofGlobal(InGame.getLocalPlayer().getZone(), x, y, z);
 
                             double dist = CustomGameMath.rayAABBTest(ray, subAABB);
-                            if (dist < closestCollision && !(subAABB.getWidth() == 0 || subAABB.getHeight() == 0 || subAABB.getDepth() == 0)) {
+                            if (dist < closestCollision) {
                                 closestCollision = dist;
 
                                 Vector3 collisionPos = new Vector3();
                                 ray.getEndPoint(collisionPos, (float) dist);
 
-                                float dx = Math.abs(subAABB.getCenterX() - collisionPos.x) / subAABB.getWidth();
-                                float dy = Math.abs(subAABB.getCenterY() - collisionPos.y) / subAABB.getHeight();
-                                float dz = Math.abs(subAABB.getCenterZ() - collisionPos.z) / subAABB.getDepth();
+                                float dx = Math.abs(subAABB.getCenterX() - collisionPos.x) / Math.max(subAABB.getWidth(), 0.000001f);
+                                float dy = Math.abs(subAABB.getCenterY() - collisionPos.y) / Math.max(subAABB.getHeight(), 0.000001f);
+                                float dz = Math.abs(subAABB.getCenterZ() - collisionPos.z) / Math.max(subAABB.getDepth(), 0.000001f);
 
                                 if (dx > dy && dx > dz) { // X axis collision
                                     blockAxis.axis = new Vector3Int(
@@ -286,5 +287,9 @@ public class BlockSelectionUtil {
         }
 
         return null;
+    }
+
+    public static boolean isInActiveGame() {
+        return InGame.allowPlayerControls() && !UI.isInventoryOpen();
     }
 }
