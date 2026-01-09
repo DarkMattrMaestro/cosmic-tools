@@ -1,0 +1,14 @@
+{
+  "id": "cosmic_tools:scythe",
+
+  "itemProperties":
+  {
+    "itemEventsId": "cosmic_tools:item_events_scythe",
+    "texture": "cosmic_tools:textures/items/scythe.png",
+
+    "modelType": "base:item3D",
+    "stackLimit": 1,
+    "durability": 500
+  },
+  "tags": [ "Scythe" ]
+}

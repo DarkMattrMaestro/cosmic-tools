@@ -1,12 +1,15 @@
 package com.darkmattrmaestro.cosmic_tools;
 
 import com.badlogic.gdx.utils.Json;
+import com.darkmattrmaestro.cosmic_tools.gameevents.actions.ItemActionReapCrops;
 import com.darkmattrmaestro.cosmic_tools.items.Scythe;
 import com.darkmattrmaestro.cosmic_tools.items.Spatula;
 import com.darkmattrmaestro.cosmic_tools.packets.PasteBlocksPacket;
 import dev.puzzleshq.puzzleloader.cosmic.game.GameRegistries;
 import dev.puzzleshq.puzzleloader.loader.mod.entrypoint.common.ModInit;
 import finalforeach.cosmicreach.GameAssetLoader;
+import finalforeach.cosmicreach.gameevents.itemevents.ItemEvents;
+import finalforeach.cosmicreach.items.ItemThing;
 import finalforeach.cosmicreach.items.recipes.CraftingRecipes;
 import finalforeach.cosmicreach.networking.GamePacket;
 import finalforeach.cosmicreach.util.Identifier;
@@ -32,7 +35,16 @@ public class CosmicToolsInit implements ModInit {
         });
 
         event.registerToQueue(() -> {
-            AbstractCosmicItem.register(new Scythe());
+//            AbstractCosmicItem.register(new Scythe());
+            ItemEvents.registerItemEventAction(ItemActionReapCrops.class);
+            ItemEvents.loadGameEventsFromAsset(
+                    ItemEvents.class,
+                    GameAssetLoader.loadAsset(Identifier.of(Constants.MOD_ID, "game_events/item_events/item_events_scythe.json"))
+            );
+            ItemThing.loadItemFromJson(
+                    GameAssetLoader.loadJson(Identifier.of(Constants.MOD_ID, "items/weapons/scythe.json"))
+            );
+//            GameAssetLoader.loadJson(Identifier.of(Constants.MOD_ID, "game_events/item_events/item_events_scythe.json"));
 //            GamePacket.registerPacket(PasteBlocksPacket.class);
 
 //            CraftingRecipes.loadRecipe(Identifier.of(Constants.MOD_ID, "recipes/crafting/tools/spatula.json"), new Json(), GameAssetLoader.loadJson(Identifier.of(Constants.MOD_ID, "recipes/crafting/tools/spatula.json")));

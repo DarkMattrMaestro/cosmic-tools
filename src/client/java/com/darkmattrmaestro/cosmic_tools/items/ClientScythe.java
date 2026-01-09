@@ -5,6 +5,7 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.ObjectMap;
 import com.badlogic.gdx.utils.OrderedMap;
 import com.darkmattrmaestro.cosmic_tools.Constants;
+import com.darkmattrmaestro.cosmic_tools.gameevents.actions.ItemActionReapCrops;
 import com.darkmattrmaestro.cosmic_tools.packets.PasteBlocksPacket;
 import com.darkmattrmaestro.cosmic_tools.utils.*;
 import finalforeach.cosmicreach.audio.SoundManager;
@@ -23,6 +24,8 @@ import finalforeach.cosmicreach.items.loot.Loot;
 import finalforeach.cosmicreach.networking.client.ClientNetworkManager;
 import finalforeach.cosmicreach.networking.packets.blocks.BreakBlockPacket;
 import finalforeach.cosmicreach.networking.packets.blocks.PlaceBlockPacket;
+import finalforeach.cosmicreach.networking.packets.items.SlotInteractPacket;
+import finalforeach.cosmicreach.networking.packets.items.SlotInteractionType;
 import finalforeach.cosmicreach.rendering.items.ItemRenderer;
 import finalforeach.cosmicreach.singletons.GameSingletons;
 import finalforeach.cosmicreach.ui.UI;
@@ -129,9 +132,9 @@ public class ClientScythe extends FunctionalSpatula {
                     args.runScheduledTriggers();
                 }
 
-//                if (ClientNetworkManager.isConnected()) {
-//                    ClientNetworkManager.sendAsClient(new BreakBlockPacket(zone, blockAxis.pos, blockState));
-//                }
+                if (ClientNetworkManager.isConnected()) {
+                    ClientNetworkManager.sendAsClient(new BreakBlockPacket(zone, blockAxis.pos, blockState));
+                }
 
                 BlockState freshBlockState = ((ItemBlock) blockState.getItem()).getBlockState();
 
@@ -162,9 +165,11 @@ public class ClientScythe extends FunctionalSpatula {
                         Constants.LOGGER.warn("---    lootStacks {}", loot.options.first().lootStacks[0].item);
                         Item lootItem = loot.options.first().lootStacks[0].item;
                         // TODO: Guard agains non-instance
-                        Constants.LOGGER.warn("foundBlockState {}", lootItem.useItemOnBlock(new ItemSlot(null, 1), InGame.getLocalPlayer(), blockAxis.pos.getOffsetBlockPos(zone, Direction.NEG_Y), Direction.POS_Y, null));
-//                        Constants.LOGGER.warn("foundBlockState {}", ((ItemBlock) lootItem).getBlockState());
-//                        foundBlockState = ((ItemBlock) lootItem).getBlockState();
+                        lootItem.useItemOnBlock(new ItemSlot(null, 1), InGame.getLocalPlayer(), blockAxis.pos.getOffsetBlockPos(zone, Direction.NEG_Y), Direction.POS_Y, null);
+
+//                        if (ClientNetworkManager.isConnected()) {
+//                            ClientNetworkManager.sendAsClient(new SlotInteractPacket(SlotInteractionType.CURSOR_RIGHT, -1, ));
+//                        }
                         break;
                     }
                 }

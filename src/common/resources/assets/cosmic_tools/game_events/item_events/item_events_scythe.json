@@ -1,0 +1,42 @@
+{
+    
+    "stringId": "cosmic_tools:item_events_scythe",
+    "triggers":
+    {
+        "onUse": [
+            {
+                "actionId": "cosmic_tools:reap_crops",
+                "parameters":
+                {
+                    "in": 0,
+                    "out": 10,
+                    "height": 5,
+                    "angleLeft": 5.0,
+                    "angleRight": -135.0
+                }
+            },
+            {
+                "actionId": "base:play_sound_2d",
+                "parameters":
+                {
+                    "sound": "base:sounds/items/laser_sound.ogg",
+                    "volume": 1,
+                    "pitch": [0.95, 1.05],
+                    "pan": 0
+                }
+            },
+            {
+                "actionId": "base:damage_item",
+                "if":
+                {
+                    "srcPlayer": { "gamemode": { "has_infinite_items": false } }
+                },
+                "parameters":
+                {
+                    "damage": 1,
+                    "canDestroyItem": true
+                }
+            }
+        ]
+    }
+}
