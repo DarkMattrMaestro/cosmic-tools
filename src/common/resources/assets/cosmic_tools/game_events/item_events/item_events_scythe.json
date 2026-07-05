@@ -9,10 +9,10 @@
                 "parameters":
                 {
                     "in": 0,
-                    "out": 10,
-                    "height": 5,
-                    "angleLeft": 5.0,
-                    "angleRight": -135.0
+                    "out": 5,
+                    "height": 2,
+                    "angleLeft": -5.0,
+                    "angleRight": 135.0
                 }
             },
             {

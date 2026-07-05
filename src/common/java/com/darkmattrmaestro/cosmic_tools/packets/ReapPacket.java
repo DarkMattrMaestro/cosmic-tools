@@ -30,7 +30,7 @@ public class ReapPacket extends GamePacket {
     public void receive(ByteBuf in) {
         this.zone = GameSingletons.world.getZoneCreateIfNull(this.readString(in));
         this.blockPos = this.readBlockPosition(in, this.zone);
-        MissingBlockStateResult result = GameSingletons.isClient ? MissingBlockStateResult.EXCEPTION : MissingBlockStateResult.MISSING_OBJECT;
+        MissingBlockStateResult result = GameSingletons.isClient() ? MissingBlockStateResult.EXCEPTION : MissingBlockStateResult.MISSING_OBJECT;
         this.brokenBlockState = BlockState.getInstance(this.readString(in), result);
     }
 

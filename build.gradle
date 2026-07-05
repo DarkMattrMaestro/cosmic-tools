@@ -29,7 +29,7 @@ dependencies {
 
     cosmicReach("finalforeach:cosmic-reach:${cosmic_reach_version}")
 
-    commonImplementation "com.github.PuzzlesHQ:cosmic-api:${cosmic_api_version}"
+    commonImplementation "com.github.PuzzlesHQ:cosmic-api:${cosmic_api_version}:merged"
 }
 
 processCommonResources {

@@ -3,6 +3,7 @@ package com.darkmattrmaestro.cosmic_tools.utils;
 import com.badlogic.gdx.math.*;
 
 import java.io.Serializable;
+import java.util.function.BiFunction;
 
 /**
  * A <code>Vector3</code> that uses integers instead of floating-point numbers.
@@ -74,6 +75,27 @@ public class Vector3Int implements Serializable {
             return this.set(this.x - value, this.y - value, this.z - value);
         }
 
+        public static Vector3Int optimize(Vector3Int[] vectors, BiFunction<Integer, Integer, Integer> function) {
+            if (vectors.length < 1) { return null; }
+
+            Vector3Int optimizedVector = vectors[0];
+            for (int i = 1; i < vectors.length; i++) {
+                optimizedVector.x = function.apply(optimizedVector.x, vectors[i].x);
+                optimizedVector.y = function.apply(optimizedVector.y, vectors[i].y);
+                optimizedVector.z = function.apply(optimizedVector.z, vectors[i].z);
+            }
+
+            return optimizedVector;
+        }
+
+        public Vector3Int optimizeWith(Vector3Int vector, BiFunction<Integer, Integer, Integer> function) {
+            int x = function.apply(this.x, vector.x);
+            int y = function.apply(this.y, vector.y);
+            int z = function.apply(this.z, vector.z);
+
+            return new Vector3Int(x, y, z);
+        }
+
         public int len2() {
             return this.x*this.x + this.y*this.y + this.z*this.z;
         }
@@ -84,6 +106,10 @@ public class Vector3Int implements Serializable {
 
         public Vector3 toVector3() {
             return new Vector3(this.x, this.y, this.z);
+        }
+
+        public Vector3 toVector3Centered() {
+            return new Vector3(this.x + 0.5f, this.y + 0.5f, this.z + 0.5f);
         }
 
         public String toString() {

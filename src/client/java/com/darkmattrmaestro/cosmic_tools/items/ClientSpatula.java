@@ -49,20 +49,6 @@ public class ClientSpatula extends FunctionalSpatula {
             // Right Click => paste
             clientSpatula.getHallucination(InGame.getLocalPlayer()); // Update copyBlocks
             if (clientSpatula.playerHasEnoughItems(InGame.getLocalPlayer())) {
-                if (!InGame.getLocalPlayer().gamemode.hasInfiniteItems()) {
-                    AtomicInteger consumedItems = new AtomicInteger(clientSpatula.copyBlocks.blocks.size());
-                    InGame.getLocalPlayer().inventory.forEachSlot((itemSlot -> {
-                        if (itemSlot.getItem() == null) {
-                            return;
-                        }
-
-                        if (ItemBlockComparison.compareItemBlockID(itemSlot.getItem(), clientSpatula.initialBlockID)) {
-                            int minConsumed = Math.min(consumedItems.get(), itemSlot.getItemAmount());
-                            itemSlot.addAmount(-minConsumed);
-                            consumedItems.addAndGet(-minConsumed);
-                        }
-                    }));
-                }
 
                 List<Chunk> chunksToUpdate = new ArrayList<>();
                 String triggerName = "onPlace";

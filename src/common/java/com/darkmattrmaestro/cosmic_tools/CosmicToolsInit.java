@@ -3,11 +3,12 @@ package com.darkmattrmaestro.cosmic_tools;
 import com.badlogic.gdx.utils.Json;
 import com.darkmattrmaestro.cosmic_tools.gameevents.actions.ItemActionReapCrops;
 import com.darkmattrmaestro.cosmic_tools.items.Scythe;
+import com.darkmattrmaestro.cosmic_tools.items.SelectionWand;
 import com.darkmattrmaestro.cosmic_tools.items.Spatula;
 import com.darkmattrmaestro.cosmic_tools.packets.PasteBlocksPacket;
 import dev.puzzleshq.puzzleloader.cosmic.game.GameRegistries;
 import dev.puzzleshq.puzzleloader.loader.mod.entrypoint.common.ModInit;
-import finalforeach.cosmicreach.GameAssetLoader;
+import finalforeach.cosmicreach.util.assets.GameAssetLoader;
 import finalforeach.cosmicreach.gameevents.itemevents.ItemEvents;
 import finalforeach.cosmicreach.items.ItemThing;
 import finalforeach.cosmicreach.items.recipes.CraftingRecipes;
@@ -32,6 +33,10 @@ public class CosmicToolsInit implements ModInit {
             GamePacket.registerPacket(PasteBlocksPacket.class);
 
             CraftingRecipes.loadRecipe(Identifier.of(Constants.MOD_ID, "recipes/crafting/tools/spatula.json"), new Json(), GameAssetLoader.loadJson(Identifier.of(Constants.MOD_ID, "recipes/crafting/tools/spatula.json")));
+        });
+
+        event.registerToQueue(() -> {
+            AbstractCosmicItem.register(new SelectionWand());
         });
 
         event.registerToQueue(() -> {

@@ -289,6 +289,105 @@ public class BlockSelectionUtil {
         return null;
     }
 
+    /**
+     * <p>
+     * Return the block position and axis of the nearest collision with the ray cast from the player's view direction.
+     * </p>
+     * <p>
+     * See <a href="http://www.cse.yorku.ca/~amana/research/grid.pdf">http://www.cse.yorku.ca/~amana/research/grid.pdf</a> for the voxel iteration method.
+     * </p>
+     *
+     * @param maxDist the maximum reach distance of the player. This equates to the maximal length of the ray projected from the player.
+     * @return the block position and axis of the collided block
+     */
+    public static BlockPosition getBlockLookingAtFar(float maxDist) {
+        Camera worldCamera = GameState.IN_GAME.getWorldCamera();
+        Ray ray = new Ray();
+        ray.set(worldCamera.position, worldCamera.direction);
+
+        //-------------------------//
+
+        int x = (int) Math.floor(ray.origin.x);
+        int y = (int) Math.floor(ray.origin.y);
+        int z = (int) Math.floor(ray.origin.z);
+
+        int stepX = 0 < ray.direction.x ? 1 : (ray.direction.x < 0 ? -1 : 0);
+        int stepY = 0 < ray.direction.y ? 1 : (ray.direction.y < 0 ? -1 : 0);
+        int stepZ = 0 < ray.direction.z ? 1 : (ray.direction.z < 0 ? -1 : 0);
+
+        double tMaxX = Integer.MAX_VALUE;
+        double tDeltaX = Integer.MAX_VALUE;
+        if (ray.direction.x != 0) {
+            tMaxX = ((x + (stepX > 0 ? 1 : 0)) - ray.origin.x) / ray.direction.x;
+            tDeltaX = stepX / ray.direction.x;
+        }
+
+        double tMaxY = Integer.MAX_VALUE;
+        double tDeltaY = Integer.MAX_VALUE;
+        if (ray.direction.y != 0) {
+            tMaxY = ((y + (stepY > 0 ? 1 : 0)) - ray.origin.y) / ray.direction.y;
+            tDeltaY = stepY / ray.direction.y;
+        }
+
+        double tMaxZ = Integer.MAX_VALUE;
+        double tDeltaZ = Integer.MAX_VALUE;
+        if (ray.direction.z != 0) {
+            tMaxZ = ((z + (stepZ > 0 ? 1 : 0)) - ray.origin.z) / ray.direction.z;
+            tDeltaZ = stepZ / ray.direction.z;
+        }
+
+        // For each step, determine which distance to the next voxel boundary is lowest (i.e.
+        // which voxel boundary is nearest) and walk that way.
+        for (int i = 0; i < maxDist; i++)
+        {
+            // Check for collisions with a block
+            BlockPosition blockPosAdj = BlockPosition.ofGlobal(InGame.getLocalPlayer().getZone(), x, y, z);
+            if (blockPosAdj.chunk() == null) {
+                return null;
+            }
+            BlockState blockAdj = blockPosAdj.getBlockState();
+            if (blockAdj != null) {
+                // Get main AABB of block and check for collision
+                BoundingBox mainAABB = new BoundingBox();
+                blockAdj.getBoundingBox(mainAABB, x, y, z);
+                if (CustomGameMath.rayAABBTest(ray, mainAABB, maxDist)) {
+                    // Get sub AABBs and check individually for collisions
+                    Array<BoundingBox> subAABBs = new Array<>(BoundingBox.class);
+
+                    blockAdj.getAllBoundingBoxes(subAABBs, x, y, z);
+                    for (BoundingBox subAABB : subAABBs) {
+                        if (CustomGameMath.rayAABBTest(ray, subAABB, maxDist)) {
+                            // Collision with block within reach
+                            return BlockPosition.ofGlobal(InGame.getLocalPlayer().getZone(), x, y, z);
+                        }
+                    }
+                }
+            }
+
+            // Do the next step.
+            if (tMaxX < tMaxY && tMaxX < tMaxZ)
+            {
+                // tMax.X is the lowest, an YZ cell boundary plane is nearest.
+                x += stepX;
+                tMaxX += tDeltaX;
+            }
+            else if (tMaxY < tMaxZ)
+            {
+                // tMax.Y is the lowest, an XZ cell boundary plane is nearest.
+                y += stepY;
+                tMaxY += tDeltaY;
+            }
+            else
+            {
+                // tMax.Z is the lowest, an XY cell boundary plane is nearest.
+                z += stepZ;
+                tMaxZ += tDeltaZ;
+            }
+        }
+
+        return null;
+    }
+
     public static boolean isInActiveGame() {
         return InGame.allowPlayerControls() && !UI.isInventoryOpen();
     }
