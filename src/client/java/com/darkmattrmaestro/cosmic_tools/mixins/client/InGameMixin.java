@@ -33,13 +33,24 @@ public class InGameMixin {
     public void renderOverlayWorld(CallbackInfo ci) {
         if (Selection.rawWorldCamera == null) { Selection.rawWorldCamera = GameState.IN_GAME.getWorldCamera(); }
 
-        if (cosmictools$sr2 == null) {
-            cosmictools$sr2 = new ShapeRenderer();
-        }
+        if (cosmictools$sr2 == null) { cosmictools$sr2 = new ShapeRenderer(); }
 
         ItemStack selected = UI.hotbar.getSelectedItemStack();
+        if (selected == null) { return; }
 
-        if(selected != null && BlockSelectionUtil.isInActiveGame() && Identifier.of(Constants.MOD_ID, "spatula").toString().equals(selected.getItem().getID())) {
+        // In-world rendering
+        if(Identifier.of(Constants.MOD_ID, "selection_wand").toString().equals(selected.getItem().getID())) {
+            ClientSelectionWand.renderOverlay(cosmictools$sr2, 0.64f);
+        }
+
+        Gdx.gl.glEnable(3042);
+        Gdx.gl.glDepthFunc(519);
+        Gdx.gl.glBlendFunc(770, GL20.GL_ONE_MINUS_SRC_ALPHA);
+        Gdx.gl.glCullFace(1028);
+
+        // Spectral rendering
+
+        if(BlockSelectionUtil.isInActiveGame() && Identifier.of(Constants.MOD_ID, "spatula").toString().equals(selected.getItem().getID())) {
             // Spatula Paste Highlighting
             ClientSpatula clientSpatula = new ClientSpatula(selected.getItem().getID());
             if (GameState.currentGameState.getClass() == InGame.class && clientSpatula.getHallucination(InGame.getLocalPlayer()) != null) {
@@ -48,23 +59,12 @@ public class InGameMixin {
             }
         }
 
-        if(selected != null && Identifier.of(Constants.MOD_ID, "selection_wand").toString().equals(selected.getItem().getID())) {
+        if(Identifier.of(Constants.MOD_ID, "selection_wand").toString().equals(selected.getItem().getID())) {
             // Selection Wand Highlighting
-            if (GameState.currentGameState.getClass() == InGame.class) {
-                // Selection Area Highlighting
-//                Color colour = new Color(0.64f, 0.64f, 0.64f, 1f);
-//                ClientSelection.draw(clientSelectionWand.selection, cosmictools$sr2, clientSelectionWand.blockAxis.axis.toVector3(), colour);
-
-                // Selection Origin Highlighting
-
-
-                // Selection Paste Highlighting
-
-
-                // SelectionWand
-                ClientSelectionWand.renderOverlay(cosmictools$sr2);
-            }
+            ClientSelectionWand.renderOverlay(cosmictools$sr2, 0.36f);
         }
+
+        Gdx.gl.glClear(256);
 
     }
 

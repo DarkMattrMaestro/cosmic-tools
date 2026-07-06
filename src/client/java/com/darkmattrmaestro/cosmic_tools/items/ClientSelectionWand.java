@@ -277,40 +277,40 @@ public class ClientSelectionWand {
         return true;
     }
 
-    public static void renderOverlay(ShapeRenderer shapeRenderer) {
+    public static void renderOverlay(ShapeRenderer shapeRenderer, float opacity) {
         DrawInfo[] drawInfos = {
                 new DrawInfo( // Draw selection to copy
                         ClientSelectionWand::getSelection,
-                        new Color(0, 0.7882352941f, 0.7882352941f, 0.25f),
-                        new Color(0.2745098039f, 0.2745098039f, 0.9098039216f, 1),
+                        new Color(0, 0.7882352941f, 0.7882352941f, 0.25f * opacity),
+                        new Color(0.2745098039f, 0.2745098039f, 0.9098039216f, opacity),
                         0,
                         renderSelection == RenderSelections.CopySelection
                 ),
                 new DrawInfo( // Draw first position
                         ClientSelectionWand::getFirstSelection,
-                        new Color(0, 0.7882352941f, 0.7882352941f, 0.2f),
-                        new Color(0.25f, 0.25f, 0.75f, 1),
+                        new Color(0, 0.7882352941f, 0.7882352941f, 0.2f * opacity),
+                        new Color(0.25f, 0.25f, 0.75f, opacity),
                         0.02f,
                         renderSelection == RenderSelections.FirstPos
                 ),
                 new DrawInfo( // Draw second position
                         ClientSelectionWand::getSecondSelection,
-                        new Color(0, 0.7882352941f, 0.7882352941f, 0.2f),
-                        new Color(0.10f, 0.10f, 0.40f, 1),
+                        new Color(0, 0.7882352941f, 0.7882352941f, 0.2f * opacity),
+                        new Color(0.10f, 0.10f, 0.40f, opacity),
                         0.02f,
                         renderSelection == RenderSelections.SecondPos
                 ),
                 new DrawInfo( // Draw paste area
                         ClientSelectionWand::getPasteSelection,
-                        new Color(0.64f, 0.64f, 0.64f, 0.25f),
-                        new Color(0.2745098039f, 0.9098039216f, 0.2745098039f, 1),
+                        new Color(0.64f, 0.64f, 0.64f, 0.25f * opacity),
+                        new Color(0.2745098039f, 0.9098039216f, 0.2745098039f, opacity),
                         0,
                         renderSelection == RenderSelections.PasteSelection
                 ),
                 new DrawInfo( // Draw paste origin
                         ClientSelectionWand::getPastePositionSelection,
-                        new Color(0, 0.8f, 0, 0.64f),
-                        new Color(0.2745098039f, 0.9098039216f, 0.2745098039f, 1),
+                        new Color(0, 0.8f, 0, 0.64f * opacity),
+                        new Color(0.2745098039f, 0.9098039216f, 0.2745098039f, opacity),
                         0.02f,
                         false
                 )
@@ -324,13 +324,15 @@ public class ClientSelectionWand {
             }
         }
 
+        Color dimmedInvertColour = new Color(invertColour.r, invertColour.g, invertColour.b, invertColour.a * opacity);
+
         Selection pasteSelection = ClientSelectionWand.getPasteSelection();
         if (pasteSelection != null) {
             boolean[] inverts = new boolean[]{invertX, invertY, invertZ};
             for (int dir = 0; dir < 3; dir++) {
                 if (!inverts[dir]) { continue; }
                 shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-                shapeRenderer.setColor(invertColour);
+                shapeRenderer.setColor(dimmedInvertColour);
                 shapeRenderer.box(
                         dir == 0 ? pasteSelection.minPos.x - invertWidth : pasteSelection.minPos.x + (float) pasteSelection.sizeX() / 2 - 0.25f,
                         dir == 1 ? pasteSelection.minPos.y - invertWidth : pasteSelection.minPos.y + (float) pasteSelection.sizeY() / 2 - 0.25f,
@@ -341,7 +343,7 @@ public class ClientSelectionWand {
                 shapeRenderer.end();
 
                 shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-                shapeRenderer.setColor(invertColour);
+                shapeRenderer.setColor(dimmedInvertColour);
                 shapeRenderer.box(
                         dir == 0 ? pasteSelection.maxPos.x + 1 : pasteSelection.minPos.x + (float) pasteSelection.sizeX() / 2 - 0.25f,
                         dir == 1 ? pasteSelection.maxPos.y + 1 : pasteSelection.minPos.y + (float) pasteSelection.sizeY() / 2 - 0.25f,
