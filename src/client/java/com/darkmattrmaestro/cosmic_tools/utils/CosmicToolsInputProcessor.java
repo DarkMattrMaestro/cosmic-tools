@@ -2,7 +2,7 @@ package com.darkmattrmaestro.cosmic_tools.utils;
 
 import com.badlogic.gdx.InputProcessor;
 import com.darkmattrmaestro.cosmic_tools.Constants;
-import com.darkmattrmaestro.cosmic_tools.items.ClientScythe;
+//import com.darkmattrmaestro.cosmic_tools.items.ClientScythe;
 import com.darkmattrmaestro.cosmic_tools.items.ClientSelectionWand;
 import com.darkmattrmaestro.cosmic_tools.items.ClientSpatula;
 import com.darkmattrmaestro.cosmic_tools.items.SelectionWand;
