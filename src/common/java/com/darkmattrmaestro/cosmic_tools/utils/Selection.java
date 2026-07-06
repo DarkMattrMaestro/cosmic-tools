@@ -7,6 +7,8 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector3;
 import com.darkmattrmaestro.cosmic_tools.Constants;
 import finalforeach.cosmicreach.blocks.BlockPosition;
+import finalforeach.cosmicreach.singletons.GameSingletons;
+import finalforeach.cosmicreach.world.World;
 
 import java.util.Objects;
 
@@ -21,8 +23,11 @@ public class Selection {
     public static final Color borderColor = new Color(0.64f, 0.64f, 0.64f, 1);
 
     public static Camera rawWorldCamera = null;
-    public static final float inflate = 0.01f;
+    public static final float inflate = 0.02f;
     private float customInflate = 0f;
+
+    private static final float waveAmplitude = 0.1f;
+    private static final int wavePeriod = 10;
 
     public Selection(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
         this.minPos = new Vector3Int(minX, minY, minZ);
@@ -96,15 +101,15 @@ public class Selection {
         return sizeX() * sizeY() * sizeZ();
     }
 
-    public void draw(ShapeRenderer sr, Color fill, Color border) {
+    public void draw(ShapeRenderer sr, Color fill, Color border, boolean highlight) {
         sr.setProjectionMatrix(Selection.rawWorldCamera.combined);
 
-        float x = this.maxPos.x + this.getInflate() + 1;
-        float y = this.minPos.y - this.getInflate();
-        float z = this.minPos.z - this.getInflate();
-        float width = -(this.sizeX() + 2*this.getInflate());
+        float width = this.sizeX() + 2*this.getInflate();
         float height = this.sizeY() + 2*this.getInflate();
-        float depth = -(this.sizeZ() + 2*this.getInflate());
+        float depth = this.sizeZ() + 2*this.getInflate();
+        float x = this.maxPos.x + this.getInflate() + 1 - width;
+        float y = this.minPos.y - this.getInflate();
+        float z = this.minPos.z - this.getInflate() + depth;
 
         // Fill
         sr.begin(ShapeRenderer.ShapeType.Filled);
@@ -118,6 +123,21 @@ public class Selection {
         sr.setColor(border);
         sr.box(x, y, z, width, height, depth);
         sr.end();
+
+        if (highlight) {
+            float waveOffset = Math.abs(((float) GameSingletons.world.currentWorldTick / wavePeriod) % 2 - 1) * waveAmplitude;
+
+            // Highlight outline
+            Gdx.gl.glLineWidth(2);
+            sr.begin(ShapeRenderer.ShapeType.Line);
+            sr.setColor(border);
+            sr.box(x - waveOffset, y - waveOffset, z + waveOffset, width + 2*waveOffset, height + 2*waveOffset, depth + 2*waveOffset);
+            sr.end();
+        }
+    }
+
+    public void draw(ShapeRenderer sr, Color fill, Color border) {
+        draw(sr, fill, border, false);
     }
 
     public Selection setCustomInflate(float customInflate) {

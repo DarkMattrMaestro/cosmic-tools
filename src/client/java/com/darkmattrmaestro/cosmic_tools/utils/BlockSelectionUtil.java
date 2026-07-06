@@ -399,6 +399,7 @@ public class BlockSelectionUtil {
 
     public static Vector3Int upViewDir() {
         Camera worldCamera = GameState.IN_GAME.getWorldCamera();
+        worldCamera.normalizeUp();
         return maxDirOnly(worldCamera.up.x, worldCamera.up.y, worldCamera.up.z);
     }
 

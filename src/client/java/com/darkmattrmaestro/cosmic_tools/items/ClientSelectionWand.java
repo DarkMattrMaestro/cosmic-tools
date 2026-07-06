@@ -31,6 +31,13 @@ import static com.darkmattrmaestro.cosmic_tools.utils.ChatUtils.blockPosToString
 import static com.darkmattrmaestro.cosmic_tools.utils.ChatUtils.sendMsg;
 import static java.lang.Math.abs;
 
+enum RenderSelections {
+    PasteSelection,
+    CopySelection,
+    FirstPos,
+    SecondPos,
+}
+
 public class ClientSelectionWand {
     private static float reachDist = 12.0f;
 
@@ -46,6 +53,8 @@ public class ClientSelectionWand {
     private static boolean invertZ = false;
     private static final Color invertColour = new Color(1, 0, 0, 0.8f);
     private static final float invertWidth = 0.064f;
+
+    private static RenderSelections renderSelection = RenderSelections.PasteSelection;
 
     public static Selection getFirstSelection() {
         if (firstPos == null) return null;
@@ -72,9 +81,24 @@ public class ClientSelectionWand {
         return Selection.of(pasteStartPos, pasteStartPos);
     }
 
-    public static void viewDirShiftPastePositionIn(int shift, int rotation) {
+    public static void viewDirShiftPosition(int shift, int rotation) {
         Vector3Int offset = (rotation == 2 ? upViewDir() : rotation == 1 ? rightViewDir() : primaryViewDir()).mult(shift);
-        pasteStartPos = pasteStartPos.getOffsetBlockPos(offset.x, offset.y, offset.z);
+
+        switch (renderSelection) {
+            case FirstPos -> {
+                firstPos = firstPos.getOffsetBlockPos(offset.x, offset.y, offset.z);
+            }
+            case SecondPos -> {
+                secondPos = secondPos.getOffsetBlockPos(offset.x, offset.y, offset.z);
+            }
+            case CopySelection -> {
+                firstPos = firstPos.getOffsetBlockPos(offset.x, offset.y, offset.z);
+                secondPos = secondPos.getOffsetBlockPos(offset.x, offset.y, offset.z);
+            }
+            case PasteSelection -> {
+                pasteStartPos = pasteStartPos.getOffsetBlockPos(offset.x, offset.y, offset.z);
+            }
+        }
     }
 
     public static boolean onMousePressed(int button) {
@@ -87,74 +111,11 @@ public class ClientSelectionWand {
 
         int shift = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) ? 1 : Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT) ? 2 : 0;
         if (button == Input.Buttons.FORWARD) {
-            viewDirShiftPastePositionIn(1, shift);
+            viewDirShiftPosition(1, shift);
         } else if (button == Input.Buttons.BACK) {
-            viewDirShiftPastePositionIn(-1, shift);
+            viewDirShiftPosition(-1, shift);
         }
 
-//        if(button == Input.Buttons.RIGHT) {
-//            // Paste
-//            Selection selection = ClientSelectionWand.getSelection();
-//            if (selection != null && pasteStartPos != null) {
-//                sendMsg("Pasting " + selection.nBlocks() + " blocks");
-//                FillAction.of(selection, pasteStartPos, BlockState.getInstance("base:wood_planks", MissingBlockStateResult.MISSING_OBJECT)).paste(InGame.getLocalPlayer().getZone(), invertX, invertY, invertZ);
-//            } else {
-//                sendMsg("Selection areas not selected");
-//            }
-//        }
-
-//        ClientSelectionWand clientSpatula = new ClientSelectionWand(selected.getItem().getID());
-//
-//        if(!BlockSelectionUtil.doesCollideFar(clientSpatula.reachDist) || !BlockSelectionUtil.isInActiveGame()) { return false; }
-//
-//        if(button == Input.Buttons.RIGHT) {
-//            // Right Click => paste
-//            clientSpatula.getHallucination(InGame.getLocalPlayer()); // Update copyBlocks
-//            if (clientSpatula.playerHasEnoughItems(InGame.getLocalPlayer())) {
-//                List<Chunk> chunksToUpdate = new ArrayList<>();
-//                String triggerName = "onPlace";
-//
-//                Zone zone = InGame.getLocalPlayer().getZone();
-//                for (BlockPosition blockPos : clientSpatula.copyBlocks.blocks) {
-//                    BlockEventTrigger[] triggers = blockPos.getBlockState().getTrigger(triggerName);
-//
-//                    Vector3Int hallucinatedPos = (new Vector3Int(blockPos.getGlobalX(), blockPos.getGlobalY(), blockPos.getGlobalZ())).add(clientSpatula.blockAxis.axis);
-//
-//                    zone.setBlockState(blockPos.getBlockState(), hallucinatedPos.x, hallucinatedPos.y, hallucinatedPos.z);
-//                    Chunk c = zone.getChunkAtBlock(hallucinatedPos.x, hallucinatedPos.y, hallucinatedPos.z);
-//                    if (!chunksToUpdate.contains(c)) {
-//                        chunksToUpdate.add(c);
-//                    }
-//
-////                    if (triggers != null) {
-////                        if (GameSingletons.isHost) {
-////                            BlockEventArgs args = new BlockEventArgs();
-////                            args.srcPlayer = InGame.getLocalPlayer();
-////                            args.srcBlockState = blockPos.getBlockState();
-////                            args.zone = zone;
-////                            args.blockPos = blockPos;
-////    //                        for (GameEventTrigger trigger: triggers) {
-////    //                            Constants.LOGGER.warn("Triggers: {}", trigger.getAction());
-////    //                        }
-////                            args.run(triggers);
-////                            args.runScheduledTriggers();
-////                        }
-////                    }
-//
-//                }
-//
-//                if (ClientNetworkManager.isConnected()) {
-//                    List<BlockPosition> offsetBlocks = clientSpatula.copyBlocks.blocks.stream().map((BlockPosition blockPos) -> {
-//                        return blockPos.getOffsetBlockPos(clientSpatula.blockAxis.axis.x, clientSpatula.blockAxis.axis.y, clientSpatula.blockAxis.axis.z);
-//                    }).toList();
-//                    ClientNetworkManager.sendAsClient(new PasteBlocksPacket(BlockMappings.ofZonePositions(zone, offsetBlocks)));
-//                }
-//
-//                ChunkUtils.remesh(chunksToUpdate, zone);
-//
-//                SoundManager.INSTANCE.playSound("cosmic_tools:sounds/items/spatula-place.ogg", 1, 1, 0);
-//            }
-//        }
         return false;
     }
 
@@ -278,6 +239,9 @@ public class ClientSelectionWand {
                 }
                 return true;
             }
+            case Input.Keys.NUMPAD_0 -> {
+                renderSelection = RenderSelections.values()[(renderSelection.ordinal() + 1) % RenderSelections.values().length];
+            }
             case Input.Keys.NUMPAD_DOT -> {
                 if (Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT)) {
                     // Sey first position
@@ -319,31 +283,36 @@ public class ClientSelectionWand {
                         ClientSelectionWand::getSelection,
                         new Color(0, 0.7882352941f, 0.7882352941f, 0.25f),
                         new Color(0.2745098039f, 0.2745098039f, 0.9098039216f, 1),
-                        0
+                        0,
+                        renderSelection == RenderSelections.CopySelection
                 ),
                 new DrawInfo( // Draw first position
                         ClientSelectionWand::getFirstSelection,
                         new Color(0, 0.7882352941f, 0.7882352941f, 0.2f),
                         new Color(0.25f, 0.25f, 0.75f, 1),
-                        0.01f
+                        0.02f,
+                        renderSelection == RenderSelections.FirstPos
                 ),
                 new DrawInfo( // Draw second position
                         ClientSelectionWand::getSecondSelection,
                         new Color(0, 0.7882352941f, 0.7882352941f, 0.2f),
                         new Color(0.10f, 0.10f, 0.40f, 1),
-                        0.01f
+                        0.02f,
+                        renderSelection == RenderSelections.SecondPos
                 ),
                 new DrawInfo( // Draw paste area
                         ClientSelectionWand::getPasteSelection,
                         new Color(0.64f, 0.64f, 0.64f, 0.25f),
                         new Color(0.2745098039f, 0.9098039216f, 0.2745098039f, 1),
-                        0
+                        0,
+                        renderSelection == RenderSelections.PasteSelection
                 ),
                 new DrawInfo( // Draw paste origin
                         ClientSelectionWand::getPastePositionSelection,
                         new Color(0, 0.8f, 0, 0.64f),
                         new Color(0.2745098039f, 0.9098039216f, 0.2745098039f, 1),
-                        0.01f
+                        0.02f,
+                        false
                 )
         };
 
@@ -351,7 +320,7 @@ public class ClientSelectionWand {
             Selection selection = drawInfo.selectionSupplier.get();
             if (selection != null) {
                 selection.setCustomInflate(drawInfo.customInflate);
-                selection.draw(shapeRenderer, drawInfo.fillColor, drawInfo.borderColor);
+                selection.draw(shapeRenderer, drawInfo.fillColor, drawInfo.borderColor, drawInfo.highlight);
             }
         }
 

@@ -9,11 +9,13 @@ public class DrawInfo {
     public Color fillColor;
     public Color borderColor;
     public float customInflate;
+    public boolean highlight;
 
-    public DrawInfo(Supplier<Selection> selectionSupplier, Color fillColor, Color borderColor, float customInflate) {
+    public DrawInfo(Supplier<Selection> selectionSupplier, Color fillColor, Color borderColor, float customInflate, boolean highlight) {
         this.selectionSupplier = selectionSupplier;
         this.fillColor = fillColor;
         this.borderColor = borderColor;
         this.customInflate = customInflate;
+        this.highlight = highlight;
     }
 }
