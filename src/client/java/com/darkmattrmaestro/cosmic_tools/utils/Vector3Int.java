@@ -74,6 +74,10 @@ public class Vector3Int implements Serializable {
             return this.set(this.x - value, this.y - value, this.z - value);
         }
 
+        public Vector3Int mult(int multiplier) {
+            return this.set(this.x * multiplier, this.y * multiplier, this.z * multiplier);
+        }
+
         public Vector3 toVector3() {
             return new Vector3(this.x, this.y, this.z);
         }

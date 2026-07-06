@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.darkmattrmaestro.cosmic_tools.utils.BlockSelectionUtil.*;
 import static com.darkmattrmaestro.cosmic_tools.utils.ChatUtils.blockPosToString;
 import static com.darkmattrmaestro.cosmic_tools.utils.ChatUtils.sendMsg;
 import static java.lang.Math.abs;
@@ -71,12 +72,24 @@ public class ClientSelectionWand {
         return Selection.of(pasteStartPos, pasteStartPos);
     }
 
+    public static void viewDirShiftPastePositionIn(int shift, int rotation) {
+        Vector3Int offset = (rotation == 2 ? upViewDir() : rotation == 1 ? rightViewDir() : primaryViewDir()).mult(shift);
+        pasteStartPos = pasteStartPos.getOffsetBlockPos(offset.x, offset.y, offset.z);
+    }
+
     public static boolean onMousePressed(int button) {
         if (GameState.currentGameState.getClass() != InGame.class) { return false; }
 
         ItemStack selected = UI.hotbar.getSelectedItemStack();
         if (selected == null || !Identifier.of(Constants.MOD_ID, "selection_wand").toString().equals(selected.getItem().getID())) {
             return false;
+        }
+
+        int shift = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) ? 1 : Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT) ? 2 : 0;
+        if (button == Input.Buttons.FORWARD) {
+            viewDirShiftPastePositionIn(1, shift);
+        } else if (button == Input.Buttons.BACK) {
+            viewDirShiftPastePositionIn(-1, shift);
         }
 
 //        if(button == Input.Buttons.RIGHT) {
@@ -265,17 +278,20 @@ public class ClientSelectionWand {
                 }
                 return true;
             }
-            case Input.Keys.ALT_LEFT -> { // Sey First Position
-                sendMsg("First position set to " + blockPosToString(pos));
-                firstPos = pos.copy();
-            }
-            case Input.Keys.ALT_RIGHT -> { // Sey Second Position
-                sendMsg("Second position set to " + blockPosToString(pos));
-                secondPos = pos.copy();
-            }
             case Input.Keys.NUMPAD_DOT -> {
-                sendMsg("Set paste origin to " + blockPosToString(pos));
-                pasteStartPos = pos.copy();
+                if (Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT)) {
+                    // Sey first position
+                    sendMsg("First position set to " + blockPosToString(pos));
+                    firstPos = pos.copy();
+                } else if (Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT)) {
+                    // Sey second position
+                    sendMsg("Second position set to " + blockPosToString(pos));
+                    secondPos = pos.copy();
+                } else {
+                    // Set paste origin
+                    sendMsg("Set paste origin to " + blockPosToString(pos));
+                    pasteStartPos = pos.copy();
+                }
             }
             case Input.Keys.NUMPAD_1 -> { // Flip Z axis
                 invertX = !invertX;

@@ -391,4 +391,30 @@ public class BlockSelectionUtil {
     public static boolean isInActiveGame() {
         return InGame.allowPlayerControls() && !UI.isInventoryOpen();
     }
+
+    public static Vector3Int primaryViewDir() {
+        Camera worldCamera = GameState.IN_GAME.getWorldCamera();
+        return maxDirOnly(worldCamera.direction.x, worldCamera.direction.y, worldCamera.direction.z);
+    }
+
+    public static Vector3Int upViewDir() {
+        Camera worldCamera = GameState.IN_GAME.getWorldCamera();
+        return maxDirOnly(worldCamera.up.x, worldCamera.up.y, worldCamera.up.z);
+    }
+
+    public static Vector3Int rightViewDir() {
+        Camera worldCamera = GameState.IN_GAME.getWorldCamera();
+        Vector3 right = worldCamera.direction.crs(worldCamera.up);
+        return maxDirOnly(right.x, right.y, right.z);
+    }
+
+    private static Vector3Int maxDirOnly(float x, float y, float z) {
+        if (Math.abs(x) > Math.abs(y) && Math.abs(x) > Math.abs(z)) {
+            return new Vector3Int(x > 0 ? 1 : -1, 0, 0);
+        } else if (Math.abs(y) > Math.abs(z)) {
+            return new Vector3Int(0, y > 0 ? 1 : -1, 0);
+        } else {
+            return new Vector3Int(0, 0, z > 0 ? 1 : -1);
+        }
+    }
 }
