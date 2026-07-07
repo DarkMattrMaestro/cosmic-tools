@@ -75,6 +75,10 @@ public class Vector3Int implements Serializable {
             return this.set(this.x - value, this.y - value, this.z - value);
         }
 
+        public Vector3Int mult(int multiplier) {
+            return this.set(this.x * multiplier, this.y * multiplier, this.z * multiplier);
+        }
+
         public static Vector3Int optimize(Vector3Int[] vectors, BiFunction<Integer, Integer, Integer> function) {
             if (vectors.length < 1) { return null; }
 

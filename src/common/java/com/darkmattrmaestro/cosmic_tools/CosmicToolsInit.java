@@ -32,7 +32,8 @@ public class CosmicToolsInit implements ModInit {
             AbstractCosmicItem.register(new Spatula());
             GamePacket.registerPacket(PasteBlocksPacket.class);
 
-            CraftingRecipes.loadRecipe(Identifier.of(Constants.MOD_ID, "recipes/crafting/tools/spatula.json"), new Json(), GameAssetLoader.loadJson(Identifier.of(Constants.MOD_ID, "recipes/crafting/tools/spatula.json")));
+
+//            CraftingRecipes.loadRecipe(Identifier.of(Constants.MOD_ID, "recipes/crafting/tools/spatula.json"), new Json(), GameAssetLoader.loadJson(Identifier.of(Constants.MOD_ID, "recipes/crafting/tools/spatula.json")));
         });
 
         event.registerToQueue(() -> {

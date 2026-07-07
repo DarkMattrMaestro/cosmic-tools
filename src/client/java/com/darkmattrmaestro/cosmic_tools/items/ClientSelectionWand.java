@@ -29,6 +29,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static com.darkmattrmaestro.cosmic_tools.utils.BlockSelectionUtil.*;
 import static com.darkmattrmaestro.cosmic_tools.utils.ChatUtils.blockPosToString;
 import static com.darkmattrmaestro.cosmic_tools.utils.ChatUtils.sendMsg;
+import static com.darkmattrmaestro.cosmic_tools.utils.SoundUtils.scrollSound;
+import static com.darkmattrmaestro.cosmic_tools.utils.SoundUtils.successFailSound;
 import static java.lang.Math.abs;
 
 enum RenderSelections {
@@ -112,8 +114,10 @@ public class ClientSelectionWand {
         int shift = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) ? 1 : Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT) ? 2 : 0;
         if (button == Input.Buttons.FORWARD) {
             viewDirShiftPosition(1, shift);
+            scrollSound();
         } else if (button == Input.Buttons.BACK) {
             viewDirShiftPosition(-1, shift);
+            scrollSound();
         }
 
         return false;
@@ -157,10 +161,10 @@ public class ClientSelectionWand {
         return copiedVolume.getBlock(mappedX, mappedY, mappedZ);
     }
 
-    public static void pasteBlocks() {
+    public static boolean pasteBlocks() {
         if (pasteStartPos == null) {
             sendMsg("Tried to paste but no paste location was set!");
-            return;
+            return false;
         }
 
         List<Chunk> chunksToUpdate = new ArrayList<>();
@@ -216,13 +220,53 @@ public class ClientSelectionWand {
 
         ChunkUtils.remesh(chunksToUpdate, zone);
 
-        SoundManager.INSTANCE.playSound("cosmic_tools:sounds/success.ogg", 1, 1, 0);
+        return true;
     }
 
-    public static void duplicateBlocks() {
-        if (copyBlocks()) {
-            pasteBlocks();
+    public static boolean clearBlocks() {
+        if (pasteStartPos == null) {
+            sendMsg("Tried to paste but no paste location was set!");
+            return false;
         }
+
+        List<Chunk> chunksToUpdate = new ArrayList<>();
+        String triggerName = "onPlace";
+
+        Zone zone = InGame.getLocalPlayer().getZone();
+
+        BlockState airBlockState = BlockState.getInstance("base:air", MissingBlockStateResult.MISSING_OBJECT);
+
+        for (int x = 0, pasteX = Math.min(firstPos.getGlobalX(), secondPos.getGlobalX()); x < copiedVolume.getSizeX(); x++, pasteX++) {
+            for (int y = 0, pasteY = Math.min(firstPos.getGlobalY(), secondPos.getGlobalY()); y < copiedVolume.getSizeY(); y++, pasteY++) {
+                for (int z = 0, pasteZ = Math.min(firstPos.getGlobalZ(), secondPos.getGlobalZ()); z < copiedVolume.getSizeZ(); z++, pasteZ++) {
+                    zone.setBlockState(airBlockState, pasteX, pasteY, pasteZ);
+                    Chunk c = zone.getChunkAtBlock(pasteX, pasteY, pasteZ);
+                    if (!chunksToUpdate.contains(c)) {
+                        chunksToUpdate.add(c);
+                    }
+                }
+            }
+        }
+
+        // TODO: Make compatible with server
+//        if (ClientNetworkManager.isConnected()) {
+//            List<BlockPosition> offsetBlocks = clientSpatula.copyBlocks.blocks.stream().map((BlockPosition blockPos) -> {
+//                return blockPos.getOffsetBlockPos(clientSpatula.blockAxis.axis.x, clientSpatula.blockAxis.axis.y, clientSpatula.blockAxis.axis.z);
+//            }).toList();
+//            ClientNetworkManager.sendAsClient(new PasteBlocksPacket(BlockMappings.ofZonePositions(zone, offsetBlocks)));
+//        }
+
+        ChunkUtils.remesh(chunksToUpdate, zone);
+
+        return true;
+    }
+
+    public static boolean duplicateBlocks() {
+        return copyBlocks() && pasteBlocks();
+    }
+
+    public static boolean cutBlocks() {
+        return copyBlocks() && clearBlocks() && pasteBlocks();
     }
 
     public static boolean onKeyPressed(int keycode) {
@@ -232,12 +276,31 @@ public class ClientSelectionWand {
         }
 
         switch (keycode) {
-            case Input.Keys.D -> {
-                if (Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT)) {
-                    // Duplicate selection
-                    duplicateBlocks();
+            case Input.Keys.D -> { // Duplicate selection
+                if (Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) && Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT)) {
+                    successFailSound(duplicateBlocks());
+                    return true;
                 }
-                return true;
+            }
+            case Input.Keys.X -> { // Cut selection
+                if (Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) && Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT)) {
+                    // Duplicate selection
+                    successFailSound(cutBlocks());
+                    return true;
+                }
+            }
+            case Input.Keys.C -> { // Copy selection
+                if (Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) && Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT)) {
+                    successFailSound(copyBlocks());
+                    return true;
+                }
+            }
+            case Input.Keys.V -> { // Paste copied selection
+                if (Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) && Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT)) {
+                    // Duplicate selection
+                    successFailSound(pasteBlocks());
+                    return true;
+                }
             }
             case Input.Keys.NUMPAD_0 -> {
                 renderSelection = RenderSelections.values()[(renderSelection.ordinal() + 1) % RenderSelections.values().length];
@@ -260,14 +323,17 @@ public class ClientSelectionWand {
             case Input.Keys.NUMPAD_1 -> { // Flip Z axis
                 invertX = !invertX;
                 sendMsg("X axis is now " + (invertX ? "" : "NOT ") + "inverted");
+                scrollSound();
             }
             case Input.Keys.NUMPAD_2 -> { // Flip Z axis
                 invertY = !invertY;
                 sendMsg("Y axis is now " + (invertY ? "" : "NOT ") + "inverted");
+                scrollSound();
             }
             case Input.Keys.NUMPAD_3 -> { // Flip Z axis
                 invertZ = !invertZ;
                 sendMsg("Z axis is now " + (invertZ ? "" : "NOT ") + "inverted");
+                scrollSound();
             }
             default -> {
                 return false;
