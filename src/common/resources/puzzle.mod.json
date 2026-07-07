@@ -15,13 +15,8 @@
     "icon": "${p_id}:icons/icon.png"
   },
   "entrypoints": {
-    "client-postInit": "${p_group}.ClientCosmicToolsMod"
-
-//    "preInit": "${p_group}.PreInitExampleMod",
+    "client-postInit": "${p_group}.ClientCosmicToolsMod",
     "init": "${p_group}.CosmicToolsInit"
-//    "postInit": "${p_group}.PostInitExampleMod",
-//
-//    "server-init": "${p_group}.ServerExampleMod"
   },
   "mixins": [
     "${p_id}.common.mixins.json",
