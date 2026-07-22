@@ -24,11 +24,33 @@ import static java.lang.Math.*;
 
 public class ClientDisplayWand {
     private static final float reachDist = 256.0f;
+    private static final int MAX_COMPONENT_DIST = 10;
+    private static final int MAX_TOTAL_DIST = 10000;
 
     private static BlockPosition tlPos = null; // Top Left
     private static BlockPosition brPos = null; // Bottom Right
     private static int hStep = 1;
     private static int vStep = 1;
+
+    private static void setTlPos(BlockPosition val) {
+        tlPos = val;
+        screenSwitches = null;
+    }
+
+    private static void setBRPos(BlockPosition val) {
+        brPos = val;
+        screenSwitches = null;
+    }
+
+    private static void setHStep(int val) {
+        hStep = val;
+        screenSwitches = null;
+    }
+
+    private static void setVStep(int val) {
+        vStep = val;
+        screenSwitches = null;
+    }
 
     private static int selectedPixelX, selectedPixelY = 0;
 
@@ -84,11 +106,11 @@ public class ClientDisplayWand {
                 case Input.Keys.NUMPAD_DOT -> {
                     if (Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT)) {
                         // Sey top-left position
-                        tlPos = pos.copy();
+                        setTlPos(pos.copy());
                         sendMsg("Top-left position set to " + blockPosToString(pos));
                     } else if (Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT)) {
                         // Sey bottom-right position
-                        brPos = pos.copy();
+                        setBRPos(pos.copy());
                         sendMsg("Bottom-right position set to " + blockPosToString(pos));
                     }
                 }
@@ -118,23 +140,23 @@ public class ClientDisplayWand {
                 }
             }
             case Input.Keys.UP -> {
-                vStep = max(1, min(abs(tlPos.getGlobalY() - brPos.getGlobalY()), vStep + 1));
+                setVStep(max(1, min(abs(tlPos.getGlobalY() - brPos.getGlobalY()), vStep + 1)));
             }
             case Input.Keys.DOWN -> {
-                vStep = max(1, min(abs(tlPos.getGlobalY() - brPos.getGlobalY()), vStep - 1));
+                setVStep(max(1, min(abs(tlPos.getGlobalY() - brPos.getGlobalY()), vStep - 1)));
             }
             case Input.Keys.RIGHT -> {
                 if (tlPos.getGlobalX() - brPos.getGlobalX() == 0) {
-                    hStep = max(1, min(abs(tlPos.getGlobalZ() - brPos.getGlobalZ()), hStep + 1));
+                    setHStep(max(1, min(abs(tlPos.getGlobalZ() - brPos.getGlobalZ()), hStep + 1)));
                 } else {
-                    hStep = max(1, min(abs(tlPos.getGlobalX() - brPos.getGlobalX()), hStep + 1));
+                    setHStep(max(1, min(abs(tlPos.getGlobalX() - brPos.getGlobalX()), hStep + 1)));
                 }
             }
             case Input.Keys.LEFT -> {
                 if (tlPos.getGlobalX() - brPos.getGlobalX() == 0) {
-                    hStep = max(1, min(abs(tlPos.getGlobalZ() - brPos.getGlobalZ()), hStep - 1));
+                    setHStep(max(1, min(abs(tlPos.getGlobalZ() - brPos.getGlobalZ()), hStep - 1)));
                 } else {
-                    hStep = max(1, min(abs(tlPos.getGlobalX() - brPos.getGlobalX()), hStep - 1));
+                    setHStep(max(1, min(abs(tlPos.getGlobalX() - brPos.getGlobalX()), hStep - 1)));
                 }
             }
         }
@@ -160,6 +182,10 @@ public class ClientDisplayWand {
         if (screenSwitches == null) { return; }
         for (int ix = getWidthPixels() - 1; ix >= 0; ix--) {
             for (int iy = getHeightPixels() - 1; iy >= 0; iy--) {
+                if (screenSwitches[ix][iy] == null) {
+                    continue;
+                }
+
                 for (BlockPosition blockPos : screenSwitches[ix][iy]) {
                     Selection.of(blockPos, blockPos).draw(shapeRenderer, new Color(0.2f, 0.9333333f, 1f, 0.1f), new Color(0.2f, 0.9333333f, 1f, 0.4f));
                 }
@@ -359,22 +385,20 @@ public class ClientDisplayWand {
         ) { return null; } // Avoid going back where previously traversed
 
         for (int dist = 1; dist <= maxComponentDist; dist++) { // Limit search distance, in blocks
-            BlockPosition potentialPos = curr.blockPos.getOffsetBlockPos(
-                    dist * pointingDir[0],
-                    dist * pointingDir[1],
-                    dist * pointingDir[2]
-            );
+            // Avoid unloaded or empty chunks
+            if (curr.blockPos.getZone().getChunkAtBlock(
+                curr.blockPos.getGlobalX() + dist * pointingDir[0],
+                curr.blockPos.getGlobalY() + dist * pointingDir[1],
+                curr.blockPos.getGlobalZ() + dist * pointingDir[2]
+            ) == null) { continue; }
+
+            BlockPosition potentialPos = curr.blockPos.getOffsetBlockPos(dist * pointingDir[0], dist * pointingDir[1], dist * pointingDir[2]);
             if (isRelevantComponent(potentialPos.getBlockState())) {
                 // Relevant component found. Add it to the queue and start searching other directions
-                Constants.LOGGER.info("Found relevant component {}", potentialPos);
                 return new OutgoingBlock(
-                        potentialPos,
-                        new int[]{
-                                -pointingDir[0],
-                                -pointingDir[1],
-                                -pointingDir[2]
-                        },
-                        dist + curr.distFromComponent
+                    potentialPos,
+                    new int[]{-pointingDir[0], -pointingDir[1], -pointingDir[2]},
+                    dist + curr.distFromComponent
                 );
             }
         }
@@ -449,10 +473,11 @@ public class ClientDisplayWand {
         Queue<OutgoingBlock> componentQueue = new ArrayDeque<OutgoingBlock>();
 
         explored.add(startPos);
+
         multiscanlineSearchComponent(new OutgoingBlock(startPos, frontfacingDir(), 0), componentQueue, maxComponentDist);
 
         while (!componentQueue.isEmpty()) {
-            Constants.LOGGER.warn(componentQueue);
+//            Constants.LOGGER.warn(componentQueue);
             OutgoingBlock curr = componentQueue.poll();
 
             // Check if the block was already traversed
@@ -463,7 +488,7 @@ public class ClientDisplayWand {
             BlockState currBlockState = curr.blockPos.getBlockState();
 
             if (currBlockState.getBlockId().equals("base:laser_switch")) {
-                Constants.LOGGER.info("Found potential laser switch {}", curr.blockPos);
+//                Constants.LOGGER.info("Found potential laser switch {}", curr.blockPos);
 
                 // Check that the laser direction is orthogonal to the laser switch's input face
                 Direction switchDirection = currBlockState.getParamDirection("direction");
@@ -479,7 +504,7 @@ public class ClientDisplayWand {
                 if (nextBlock == null || !isCausalLaserEmitter(nextBlock.blockPos.getBlockState(), curr.outgoingDir)) { continue; }
 
                 // Indicate that the laser switch was found and end the search branch
-                Constants.LOGGER.info("Laser switch valid {}", curr.blockPos);
+//                Constants.LOGGER.info("Laser switch valid {}", curr.blockPos);
                 foundSwitches.add(curr.blockPos);
                 explored.add(curr.blockPos);
             } else if (currBlockState.getBlockId().equals("base:laser_emitter")) {
@@ -489,11 +514,12 @@ public class ClientDisplayWand {
                 multiscanlineSearchComponent(curr, componentQueue, maxComponentDist);
             } else {
                 // Stop searching further through the solid block
-                Constants.LOGGER.info("Found solid block {}", curr.blockPos);
+//                Constants.LOGGER.info("Found solid block {}", curr.blockPos);
                 explored.add(curr.blockPos);
             }
         }
 
+        Constants.LOGGER.info("foundSwitches {}", foundSwitches);
         return foundSwitches;
     }
 
@@ -501,9 +527,12 @@ public class ClientDisplayWand {
         screenSwitches = new ArrayList[getWidthPixels()][getHeightPixels()];
         for (int ix = getWidthPixels() - 1; ix >= 0; ix--) {
             for (int iy = getHeightPixels() - 1; iy >= 0; iy--) {
+                Constants.LOGGER.warn("[{}][{}]", ix, iy);
                 screenSwitches[ix][iy] = breadthFirstSearchSwitches(getPixelLampPos(ix, iy), maxComponentDist, maxTotalDist);
+                Constants.LOGGER.warn("screenSwitches[{}][{}]: {}", ix, iy, screenSwitches[ix][iy]);
             }
         }
+        Constants.LOGGER.error("DONE CACHING");
     }
 
 //    public static boolean stepNextSwitch(BlockPosition startPos, ObjectSet<BlockPosition> ignoredBlocks, int maxComponentDist, int maxComponentsTraversed) {
@@ -800,50 +829,5 @@ public class ClientDisplayWand {
 
         return numSwitches;
     }
-
-    //----------------------------------//
-
-//    /**
-//     *
-//     *
-//     * @param blockPos The position of the block that represents the desired pixel
-//     * @return True if the pixel can be set (i.e. the pixel exists), else false
-//     */
-//    public static boolean setSelectedPixel(BlockPosition blockPos) {
-//        if (
-//            BlockSelectionUtil.isWithin(blockPos, Selection.of(tlPos, brPos))
-//            && abs(blockPos.getGlobalY() - tlPos.getGlobalY()) % vStep == 0
-//            && abs(blockPos.getGlobalZ() - tlPos.getGlobalZ()) % hStep == 0
-//            && abs(blockPos.getGlobalX() - tlPos.getGlobalX()) % hStep == 0
-//        ) {
-//            selectedPixelY = abs(blockPos.getGlobalY() - tlPos.getGlobalY()) / vStep;
-//            if (isParallelX()) {
-//                selectedPixelX = abs(blockPos.getGlobalZ() - tlPos.getGlobalZ()) / hStep;
-//            } else {
-//                selectedPixelX = abs(blockPos.getGlobalX() - tlPos.getGlobalX()) / hStep;
-//            }
-//
-//            return true;
-//        }
-//
-//        return false;
-//    }
-//
-//    public static void onMousePressed(int button) {
-//        if (tlPos == null || brPos == null) { return; }
-//
-//        switch (button) {
-//            case Input.Buttons.LEFT -> {
-//                BlockPosition lookingBlock = BlockSelectionUtil.getBlockPositionLookingAt().copy();
-//                BlockState blockState = lookingBlock.getBlockState();
-//
-//                // Attempt to set the current pixel, else start selecting rows
-//                if (!setSelectedPixel(lookingBlock)) {
-//                    Constants.LOGGER.info("Setting rows");
-//                }
-//            }
-//        }
-//    }
-//}
 
 }
