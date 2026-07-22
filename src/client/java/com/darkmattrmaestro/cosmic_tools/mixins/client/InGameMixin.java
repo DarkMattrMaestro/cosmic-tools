@@ -46,7 +46,6 @@ public class InGameMixin {
         Gdx.gl.glEnable(3042);
         Gdx.gl.glDepthFunc(519);
         Gdx.gl.glBlendFunc(770, GL20.GL_ONE_MINUS_SRC_ALPHA);
-        Gdx.gl.glCullFace(1028);
 
         // Spectral rendering
 
@@ -57,6 +56,11 @@ public class InGameMixin {
                 Color colour = clientSpatula.playerHasEnoughItems(InGame.getLocalPlayer()) ? new Color(0.64f, 0.64f, 0.64f, 1f) : new Color(1f, 0.2f, 0.2f, 1f);
                 ClientHallucination.draw(clientSpatula.copyBlocks, cosmictools$sr2, clientSpatula.blockAxis.axis.toVector3(), colour);
             }
+        }
+
+        if(Identifier.of(Constants.MOD_ID, "selection_wand").toString().equals(selected.getItem().getID())) {
+            // Selection Wand Highlighting
+            ClientSelectionWand.renderOverlay(cosmictools$sr2, 0.36f);
         }
 
         if(Identifier.of(Constants.MOD_ID, "selection_wand").toString().equals(selected.getItem().getID())) {

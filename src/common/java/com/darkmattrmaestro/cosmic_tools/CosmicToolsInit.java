@@ -2,6 +2,7 @@ package com.darkmattrmaestro.cosmic_tools;
 
 import com.badlogic.gdx.utils.Json;
 import com.darkmattrmaestro.cosmic_tools.gameevents.actions.ItemActionReapCrops;
+import com.darkmattrmaestro.cosmic_tools.items.DisplayWand;
 import com.darkmattrmaestro.cosmic_tools.items.Scythe;
 import com.darkmattrmaestro.cosmic_tools.items.SelectionWand;
 import com.darkmattrmaestro.cosmic_tools.items.Spatula;
@@ -31,8 +32,6 @@ public class CosmicToolsInit implements ModInit {
         event.registerToQueue(() -> {
             AbstractCosmicItem.register(new Spatula());
             GamePacket.registerPacket(PasteBlocksPacket.class);
-
-
 //            CraftingRecipes.loadRecipe(Identifier.of(Constants.MOD_ID, "recipes/crafting/tools/spatula.json"), new Json(), GameAssetLoader.loadJson(Identifier.of(Constants.MOD_ID, "recipes/crafting/tools/spatula.json")));
         });
 
@@ -40,6 +39,11 @@ public class CosmicToolsInit implements ModInit {
             AbstractCosmicItem.register(new SelectionWand());
         });
 
+        event.registerToQueue(() -> {
+            AbstractCosmicItem.register(new DisplayWand());
+        });
+
+        // Scythe
         event.registerToQueue(() -> {
 //            AbstractCosmicItem.register(new Scythe());
             ItemEvents.registerItemEventAction(ItemActionReapCrops.class);

@@ -7,11 +7,9 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.darkmattrmaestro.cosmic_tools.Constants;
 import com.darkmattrmaestro.cosmic_tools.packets.PasteBlocksPacket;
 import com.darkmattrmaestro.cosmic_tools.utils.*;
-import finalforeach.cosmicreach.audio.SoundManager;
 import finalforeach.cosmicreach.blocks.BlockPosition;
 import finalforeach.cosmicreach.blocks.BlockState;
 import finalforeach.cosmicreach.blocks.MissingBlockStateResult;
-import finalforeach.cosmicreach.entities.player.Player;
 import finalforeach.cosmicreach.gameevents.blockevents.BlockEventTrigger;
 import finalforeach.cosmicreach.gamestates.GameState;
 import finalforeach.cosmicreach.gamestates.InGame;
@@ -24,24 +22,15 @@ import finalforeach.cosmicreach.world.Zone;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.darkmattrmaestro.cosmic_tools.utils.BlockSelectionUtil.*;
 import static com.darkmattrmaestro.cosmic_tools.utils.ChatUtils.blockPosToString;
 import static com.darkmattrmaestro.cosmic_tools.utils.ChatUtils.sendMsg;
 import static com.darkmattrmaestro.cosmic_tools.utils.SoundUtils.scrollSound;
 import static com.darkmattrmaestro.cosmic_tools.utils.SoundUtils.successFailSound;
-import static java.lang.Math.abs;
-
-enum RenderSelections {
-    PasteSelection,
-    CopySelection,
-    FirstPos,
-    SecondPos,
-}
 
 public class ClientSelectionWand {
-    private static float reachDist = 12.0f;
+    private static final float reachDist = 256.0f;
 
     private static BlockPosition firstPos = null;
     private static BlockPosition secondPos = null;
@@ -270,55 +259,31 @@ public class ClientSelectionWand {
     }
 
     public static boolean onKeyPressed(int keycode) {
-        BlockPosition pos = BlockSelectionUtil.getBlockLookingAtFar(20); // TODO: vary reach dist
-        if (pos == null) {
-            return false;
-        }
+        boolean captured = true;
 
         switch (keycode) {
             case Input.Keys.D -> { // Duplicate selection
                 if (Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) && Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT)) {
                     successFailSound(duplicateBlocks());
-                    return true;
                 }
             }
             case Input.Keys.X -> { // Cut selection
                 if (Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) && Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT)) {
-                    // Duplicate selection
                     successFailSound(cutBlocks());
-                    return true;
                 }
             }
             case Input.Keys.C -> { // Copy selection
                 if (Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) && Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT)) {
                     successFailSound(copyBlocks());
-                    return true;
                 }
             }
             case Input.Keys.V -> { // Paste copied selection
                 if (Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) && Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT)) {
-                    // Duplicate selection
                     successFailSound(pasteBlocks());
-                    return true;
                 }
             }
-            case Input.Keys.NUMPAD_0 -> {
+            case Input.Keys.NUMPAD_0 -> { // Switch active selection
                 renderSelection = RenderSelections.values()[(renderSelection.ordinal() + 1) % RenderSelections.values().length];
-            }
-            case Input.Keys.NUMPAD_DOT -> {
-                if (Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT)) {
-                    // Sey first position
-                    sendMsg("First position set to " + blockPosToString(pos));
-                    firstPos = pos.copy();
-                } else if (Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT)) {
-                    // Sey second position
-                    sendMsg("Second position set to " + blockPosToString(pos));
-                    secondPos = pos.copy();
-                } else {
-                    // Set paste origin
-                    sendMsg("Set paste origin to " + blockPosToString(pos));
-                    pasteStartPos = pos.copy();
-                }
             }
             case Input.Keys.NUMPAD_1 -> { // Flip Z axis
                 invertX = !invertX;
@@ -336,11 +301,38 @@ public class ClientSelectionWand {
                 scrollSound();
             }
             default -> {
-                return false;
+                captured = false;
             }
         }
 
-        return true;
+        if (captured) { return true; }
+        captured = true;
+
+        BlockPosition pos = BlockSelectionUtil.getBlockLookingAtFar(reachDist);
+        if (pos != null) {
+            switch (keycode) {
+                case Input.Keys.NUMPAD_DOT -> {
+                    if (Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT)) {
+                        // Sey first position
+                        sendMsg("First position set to " + blockPosToString(pos));
+                        firstPos = pos.copy();
+                    } else if (Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT)) {
+                        // Sey second position
+                        sendMsg("Second position set to " + blockPosToString(pos));
+                        secondPos = pos.copy();
+                    } else {
+                        // Set paste origin
+                        sendMsg("Set paste origin to " + blockPosToString(pos));
+                        pasteStartPos = pos.copy();
+                    }
+                }
+                default -> {
+                    captured = false;
+                }
+            }
+        }
+
+        return captured;
     }
 
     public static void renderOverlay(ShapeRenderer shapeRenderer, float opacity) {

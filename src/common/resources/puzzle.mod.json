@@ -1,6 +1,7 @@
 {
   "formatVersion": 3,
   "display-name": "${p_name}",
+  "name": "${p_name}",
   "id": "${p_id}",
   "version": "${p_version}",
   "description": "${p_desc}",
