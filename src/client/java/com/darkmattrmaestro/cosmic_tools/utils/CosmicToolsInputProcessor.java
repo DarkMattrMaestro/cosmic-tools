@@ -49,12 +49,14 @@ public class CosmicToolsInputProcessor implements InputProcessor {
             ItemStack selected = UI.hotbar.getSelectedItemStack();
             if (selected == null) { break hotbarItems; }
 
-            if(Identifier.of(Constants.MOD_ID, "spatula").toString().equals(selected.getItem().getID())) {
+            if (Identifier.of(Constants.MOD_ID, "spatula").toString().equals(selected.getItem().getID())) {
                 blockInput |= ClientSpatula.onMousePressed(button);
             } else if (Identifier.of(Constants.MOD_ID, "scythe").toString().equals(selected.getItem().getID())) {
 //                blockInput |= ClientScythe.onMousePressed(button);
             } else if(Identifier.of(Constants.MOD_ID, "selection_wand").toString().equals(selected.getItem().getID())) {
                 blockInput |= ClientSelectionWand.onMousePressed(button);
+            } else if(Identifier.of(Constants.MOD_ID, "display_wand").toString().equals(selected.getItem().getID())) {
+                blockInput |= ClientDisplayWand.onMousePressed(button);
             }
         } catch (Exception e) {}
 

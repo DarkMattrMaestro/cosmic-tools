@@ -12,4 +12,9 @@ public class OutgoingBlock {
         this.outgoingDir = outgoingDir;
         this.distFromComponent = distFromComponent;
     }
+
+    @Override
+    public String toString() {
+        return "{" + blockPos.toString() + " d" + distFromComponent + "}";
+    }
 }

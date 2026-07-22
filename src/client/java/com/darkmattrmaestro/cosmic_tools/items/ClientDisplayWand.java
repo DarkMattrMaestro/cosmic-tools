@@ -60,9 +60,10 @@ public class ClientDisplayWand {
     public static boolean onMousePressed(int button) {
         if (GameState.currentGameState.getClass() != InGame.class) { return false; }
 
-        ItemStack selected = UI.hotbar.getSelectedItemStack();
-        if (selected == null || !Identifier.of(Constants.MOD_ID, "selection_wand").toString().equals(selected.getItem().getID())) {
-            return false;
+        BlockPosition pos = BlockSelectionUtil.getBlockLookingAtFar(reachDist);
+        if (pos != null) {
+            breadthFirstSearchSwitches(pos, 10, 20);
+            return true;
         }
 
         return false;
@@ -169,8 +170,19 @@ public class ClientDisplayWand {
 
 
 
-
-
+    public static int[] frontfacingDir() {
+        if (getTLPos().getGlobalX() > getBRPos().getGlobalX()) {
+            return new int[]{0, 0, -1};
+        } else if (getTLPos().getGlobalX() < getBRPos().getGlobalX()) {
+            return new int[]{0, 0, 1};
+        } else {
+            if (getTLPos().getGlobalZ() > getBRPos().getGlobalZ()) {
+                return new int[]{-1, 0, 0};
+            } else {
+                return new int[]{1, 0, 0};
+            }
+        }
+    }
 
     public static boolean isParallelX() {
         if (tlPos == null || brPos == null) { return false; }
@@ -428,6 +440,43 @@ public class ClientDisplayWand {
         );
     }
 
+    public static void scanlineSearchComponent(OutgoingBlock curr, Queue<OutgoingBlock> componentQueue, int maxComponentDist) {
+        int[][] directions = new int[][]{{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
+
+        // Find the next relevant component to add to the queue
+        for (int iDir = 0; iDir < 6; iDir++) { // Iterate potential pointing directions
+            int[] pointingDir = directions[iDir];
+            if (
+                pointingDir[0] == curr.outgoingDir[0] &&
+                pointingDir[1] == curr.outgoingDir[1] &&
+                pointingDir[2] == curr.outgoingDir[2]
+            ) { continue; } // Avoid going back where previously traversed
+
+            for (int dist = 1; dist <= maxComponentDist; dist++) { // Limit search distance, in blocks
+                BlockPosition potentialPos = curr.blockPos.getOffsetBlockPos(
+                        dist * directions[iDir][0],
+                        dist * directions[iDir][1],
+                        dist * directions[iDir][2]
+                );
+                if (isRelevantComponent(potentialPos.getBlockState())) {
+                    // Relevant component found. Add it to the queue and start searching other directions
+                    Constants.LOGGER.info("Found relevant component {}", potentialPos);
+                    componentQueue.add(new OutgoingBlock(
+                            potentialPos,
+                            new int[]{
+                                    -directions[iDir][0],
+                                    -directions[iDir][1],
+                                    -directions[iDir][2]
+                            },
+                            dist
+                    ));
+
+                    break;
+                }
+            }
+        }
+    }
+
     /**
      * Search for all laser switches that point into the given starting position `startPos` via breadth-first search.
      *
@@ -436,14 +485,19 @@ public class ClientDisplayWand {
      * @param maxTotalDist The maximal distance traveled for a given branch of the search. Prevents loops in branches.
      */
     public static void breadthFirstSearchSwitches(BlockPosition startPos, int maxComponentDist, int maxTotalDist) {
-        int[][] directions = new int[][]{{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
+        Constants.LOGGER.warn("Starting breadth-first search");
 
         ArrayList<BlockPosition> foundSwitches = new ArrayList<BlockPosition>();
 
         HashSet<BlockPosition> explored = new HashSet<BlockPosition>();
         Queue<OutgoingBlock> componentQueue = new ArrayDeque<OutgoingBlock>();
-        componentQueue.add(new OutgoingBlock(startPos, new int[]{0, 0, 0}, 0)); // TODO: Set proper direction
+
+//        componentQueue.add(new OutgoingBlock(startPos, frontfacingDir(), 0));
+        explored.add(startPos);
+        scanlineSearchComponent(new OutgoingBlock(startPos, frontfacingDir(), 0), componentQueue, maxComponentDist);
+
         while (!componentQueue.isEmpty()) {
+            Constants.LOGGER.warn(componentQueue);
             OutgoingBlock curr = componentQueue.poll();
 
             // Check if the block was already traversed
@@ -454,16 +508,18 @@ public class ClientDisplayWand {
             BlockState currBlockState = curr.blockPos.getBlockState();
 
             if (currBlockState.getBlockId().equals("base:laser_switch")) {
+                Constants.LOGGER.info("Found potential laser switch {}", curr.blockPos);
                 // Check that the laser direction is orthogonal to the laser switch's input face
                 Direction switchDirection = currBlockState.getParamDirection("direction");
                 if (
                         switchDirection != null &&
-                        (switchDirection.getXOffset() != 0) == (curr.outgoingDir[0] == 0) &&
-                        (switchDirection.getYOffset() != 0) == (curr.outgoingDir[1] == 0) &&
-                        (switchDirection.getZOffset() != 0) == (curr.outgoingDir[2] == 0)
+                        !(switchDirection.getXOffset() != 0 && curr.outgoingDir[0] != 0) &&
+                        !(switchDirection.getYOffset() != 0 && curr.outgoingDir[1] != 0) &&
+                        !(switchDirection.getZOffset() != 0 && curr.outgoingDir[2] != 0)
                 ) {
                     // Indicate that the laser switch was found and end the search branch
-                    Constants.LOGGER.info("Found laser switch {}", curr.blockPos);
+                    Constants.LOGGER.info("Laser switch valid {}", curr.blockPos);
+                    // TODO: Check that there is a laser emitter on the other side of the laser switch
                     foundSwitches.add(curr.blockPos);
                     explored.add(curr.blockPos);
                 } else {
@@ -495,34 +551,7 @@ public class ClientDisplayWand {
                 // Ignore the laser emitter if it is pointing elsewhere
                 if (!dirMatches) { continue; }
 
-                // Find the next relevant component to add to the queue
-                for (int iDir = 0; iDir < 6; iDir++) { // Iterate potential pointing directions
-                    int[] pointingDir = directions[iDir];
-                    if (pointingDir == curr.outgoingDir) { continue; } // Avoid going back where previously traversed
-
-                    for (int dist = 1; dist <= maxComponentDist; dist++) { // Limit search distance, in blocks
-                        BlockPosition potentialPos = curr.blockPos.getOffsetBlockPos(
-                                dist * directions[iDir][0],
-                                dist * directions[iDir][1],
-                                dist * directions[iDir][2]
-                        );
-                        if (isRelevantComponent(potentialPos.getBlockState())) {
-                            // Relevant component found. Add it to the queue and start searching other directions
-                            Constants.LOGGER.info("Found laser emitter {}", potentialPos);
-                            componentQueue.add(new OutgoingBlock(
-                                    potentialPos,
-                                    new int[]{
-                                        -directions[iDir][0],
-                                        -directions[iDir][1],
-                                        -directions[iDir][2]
-                                    },
-                                    dist
-                            ));
-
-                            break;
-                        }
-                    }
-                }
+                scanlineSearchComponent(curr, componentQueue, maxComponentDist);
             } else {
                 // Stop searching further through the solid block
                 Constants.LOGGER.info("Found solid block {}", curr.blockPos);
