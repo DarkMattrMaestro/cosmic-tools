@@ -16,7 +16,7 @@
     "icon": "${p_id}:icons/icon.png"
   },
   "entrypoints": {
-    "client-postInit": "${p_group}.ClientCosmicToolsMod",
+    "client-init": "${p_group}.ClientCosmicToolsMod",
     "init": "${p_group}.CosmicToolsInit"
   },
   "mixins": [

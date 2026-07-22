@@ -3,6 +3,7 @@ package com.darkmattrmaestro.cosmic_tools.utils;
 import com.badlogic.gdx.InputProcessor;
 import com.darkmattrmaestro.cosmic_tools.Constants;
 //import com.darkmattrmaestro.cosmic_tools.items.ClientScythe;
+import com.darkmattrmaestro.cosmic_tools.items.ClientDisplayWand;
 import com.darkmattrmaestro.cosmic_tools.items.ClientSelectionWand;
 import com.darkmattrmaestro.cosmic_tools.items.ClientSpatula;
 import com.darkmattrmaestro.cosmic_tools.items.SelectionWand;
@@ -22,6 +23,8 @@ public class CosmicToolsInputProcessor implements InputProcessor {
 
             if ((Identifier.of(Constants.MOD_ID, "selection_wand").toString().equals(selected.getItem().getID()))) {
                 blockInput |= ClientSelectionWand.onKeyPressed(keycode);
+            } else if ((Identifier.of(Constants.MOD_ID, "display_wand").toString().equals(selected.getItem().getID()))) {
+                blockInput |= ClientDisplayWand.onKeyPressed(keycode);
             }
         } catch (Exception e) {}
 

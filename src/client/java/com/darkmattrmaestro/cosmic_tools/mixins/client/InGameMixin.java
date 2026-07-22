@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.darkmattrmaestro.cosmic_tools.Constants;
+import com.darkmattrmaestro.cosmic_tools.items.ClientDisplayWand;
 import com.darkmattrmaestro.cosmic_tools.items.ClientSelectionWand;
 import com.darkmattrmaestro.cosmic_tools.items.ClientSpatula;
 import com.darkmattrmaestro.cosmic_tools.items.SelectionWand;
@@ -43,6 +44,11 @@ public class InGameMixin {
             ClientSelectionWand.renderOverlay(cosmictools$sr2, 0.64f);
         }
 
+        if(Identifier.of(Constants.MOD_ID, "display_wand").toString().equals(selected.getItem().getID())) {
+            // Selection Wand Highlighting
+            ClientDisplayWand.renderInWorld(cosmictools$sr2);
+        }
+
         Gdx.gl.glEnable(3042);
         Gdx.gl.glDepthFunc(519);
         Gdx.gl.glBlendFunc(770, GL20.GL_ONE_MINUS_SRC_ALPHA);
@@ -63,9 +69,9 @@ public class InGameMixin {
             ClientSelectionWand.renderOverlay(cosmictools$sr2, 0.36f);
         }
 
-        if(Identifier.of(Constants.MOD_ID, "selection_wand").toString().equals(selected.getItem().getID())) {
+        if(Identifier.of(Constants.MOD_ID, "display_wand").toString().equals(selected.getItem().getID())) {
             // Selection Wand Highlighting
-            ClientSelectionWand.renderOverlay(cosmictools$sr2, 0.36f);
+            ClientDisplayWand.renderOverlay(cosmictools$sr2);
         }
 
         Gdx.gl.glClear(256);
