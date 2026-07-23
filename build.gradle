@@ -63,6 +63,12 @@ wrapper {
     distributionType = Wrapper.DistributionType.ALL
 }
 
+tasks.buildMergedJar {
+    archiveBaseName = project.name + "-" + project.cosmic_reach_version.replace("-alpha", "")
+    archiveVersion = version
+    archiveClassifier = ''
+}
+
 afterEvaluate {
     tasks.named("runModdedClient") {
         environment "ITCHIO_API_KEY", itch_api_key
