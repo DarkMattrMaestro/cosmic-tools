@@ -5,6 +5,7 @@ import com.darkmattrmaestro.cosmic_tools.Constants;
 import com.darkmattrmaestro.cosmic_tools.items.ClientDisplayWand;
 import com.darkmattrmaestro.cosmic_tools.utils.ChunkUtils;
 import com.darkmattrmaestro.cosmic_tools.utils.Selection;
+import com.darkmattrmaestro.cosmic_tools.utils.SoundUtils;
 import finalforeach.cosmicreach.blocks.BlockPosition;
 import finalforeach.cosmicreach.blocks.BlockState;
 import finalforeach.cosmicreach.chat.IChat;
@@ -30,9 +31,9 @@ import java.util.List;
 import static com.darkmattrmaestro.cosmic_tools.utils.ChatUtils.sendMsg;
 
 public class CommandLoadVideo extends Command {
-    static {
-        OpenCV.loadShared();
-    }
+//    static {
+//        OpenCV.loadShared();
+//    }
 
     public static Array<Selection> failedLampsSelections = new Array<>();
 
@@ -68,7 +69,8 @@ public class CommandLoadVideo extends Command {
                     return;
                 }
 
-                System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+//                System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+                OpenCV.loadShared();
 
                 try {
                     VideoCapture vidCap = new VideoCapture(fileLocation);
@@ -76,6 +78,7 @@ public class CommandLoadVideo extends Command {
                     if (!vidCap.isOpened()) {
                         sendMsg("Could not load video from " + fileLocation);
                         Constants.LOGGER.warn("Could not load video from {}", fileLocation);
+                        SoundUtils.successFailSound(false);
                         return;
                     }
                     double originalT = 1 / vidCap.get(Videoio.CAP_PROP_FPS);
@@ -129,12 +132,16 @@ public class CommandLoadVideo extends Command {
                                 String powerValue = (avgColour > 0.5 != lastAvgColour > 0.5) ? "on" : "off";
                                 Constants.LOGGER.warn("x:{} y:{} -> {}", x, y, powerValue);
 
-                                BlockPosition switchPos = ClientDisplayWand.getSwitchAtIndex(ClientDisplayWand.getPixelLampPos(x, y), frameIndex, 20);
+                                BlockPosition switchPos = ClientDisplayWand.getSwitchAtIndex(x, y, frameIndex);
                                 if (switchPos == null) {
                                     BlockPosition failedLampPos = ClientDisplayWand.getPixelLampPos(x, y);
+                                    if (failedLampPos == null) {
+                                        Constants.LOGGER.error("An error");
+                                        continue;
+                                    }
                                     failedLampsSelections.add(Selection.of(failedLampPos, failedLampPos));
                                     sendMsg("Lamp at " + failedLampPos + " has no connected laser switch!");
-                                    Constants.LOGGER.error("Could not find switchBit for {}", ClientDisplayWand.getPixelLampPos(x, y));
+                                    Constants.LOGGER.error("Could not find laser switch bit for {}", failedLampPos);
                                     continue;
                                 }
                                 BlockState switchState = switchPos.getBlockState();

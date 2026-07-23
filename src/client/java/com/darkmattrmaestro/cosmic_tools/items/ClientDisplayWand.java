@@ -19,12 +19,14 @@ import java.util.*;
 
 import static com.darkmattrmaestro.cosmic_tools.utils.ChatUtils.blockPosToString;
 import static com.darkmattrmaestro.cosmic_tools.utils.ChatUtils.sendMsg;
+import static com.darkmattrmaestro.cosmic_tools.utils.SoundUtils.scrollSound;
+import static com.darkmattrmaestro.cosmic_tools.utils.SoundUtils.successFailSound;
 import static finalforeach.cosmicreach.entities.projectiles.EntityProjectileLaser.TAG_STOPS_LASERS;
 import static java.lang.Math.*;
 
 public class ClientDisplayWand {
     private static final float reachDist = 256.0f;
-    private static final int MAX_COMPONENT_DIST = 10;
+    private static final int MAX_COMPONENT_DIST = 32;
     private static final int MAX_TOTAL_DIST = 10000;
 
     private static BlockPosition tlPos = null; // Top Left
@@ -35,21 +37,25 @@ public class ClientDisplayWand {
     private static void setTlPos(BlockPosition val) {
         tlPos = val;
         screenSwitches = null;
+        cacheAllSwitches(10, 20);
     }
 
     private static void setBRPos(BlockPosition val) {
         brPos = val;
         screenSwitches = null;
+        cacheAllSwitches(10, 20);
     }
 
     private static void setHStep(int val) {
         hStep = val;
         screenSwitches = null;
+        cacheAllSwitches(10, 20);
     }
 
     private static void setVStep(int val) {
         vStep = val;
         screenSwitches = null;
+        cacheAllSwitches(10, 20);
     }
 
     private static int selectedPixelX, selectedPixelY = 0;
@@ -79,9 +85,9 @@ public class ClientDisplayWand {
     public static boolean onMousePressed(int button) {
         if (GameState.currentGameState.getClass() != InGame.class) { return false; }
 
-        BlockPosition pos = BlockSelectionUtil.getBlockLookingAtFar(reachDist);
-        if (pos != null) {
+        if (button == Input.Buttons.RIGHT) {
             cacheAllSwitches(10, 20);
+            successFailSound(true);
             return true;
         }
 
@@ -127,23 +133,13 @@ public class ClientDisplayWand {
         if (tlPos == null || brPos == null) { return false; }
 
         switch (keycode) {
-            case Input.Keys.ENTER -> {
-                Constants.LOGGER.warn("Finding bits...");
-                if (getSelectedLampPos() == null) {
-                    Constants.LOGGER.warn("There is no selected lamp position!");
-                    break;
-                }
-                for (int i = 0;; i++) {
-                    BlockPosition ithSwitchPos = getSwitchAtIndex(getSelectedLampPos(), i, 5);
-                    if (ithSwitchPos == null) { break; }
-//                    Constants.LOGGER.warn("Found laserSwitch #{}: {}", i, ithSwitchPos);
-                }
-            }
             case Input.Keys.UP -> {
                 setVStep(max(1, min(abs(tlPos.getGlobalY() - brPos.getGlobalY()), vStep + 1)));
+                scrollSound();
             }
             case Input.Keys.DOWN -> {
                 setVStep(max(1, min(abs(tlPos.getGlobalY() - brPos.getGlobalY()), vStep - 1)));
+                scrollSound();
             }
             case Input.Keys.RIGHT -> {
                 if (tlPos.getGlobalX() - brPos.getGlobalX() == 0) {
@@ -151,6 +147,7 @@ public class ClientDisplayWand {
                 } else {
                     setHStep(max(1, min(abs(tlPos.getGlobalX() - brPos.getGlobalX()), hStep + 1)));
                 }
+                scrollSound();
             }
             case Input.Keys.LEFT -> {
                 if (tlPos.getGlobalX() - brPos.getGlobalX() == 0) {
@@ -158,6 +155,7 @@ public class ClientDisplayWand {
                 } else {
                     setHStep(max(1, min(abs(tlPos.getGlobalX() - brPos.getGlobalX()), hStep - 1)));
                 }
+                scrollSound();
             }
         }
 
@@ -167,7 +165,6 @@ public class ClientDisplayWand {
     }
 
     public static void renderInWorld(ShapeRenderer shapeRenderer) {
-        // TODO: Fix CommandLoadVideo
         for (Selection failedLampSelection : CommandLoadVideo.failedLampsSelections) {
             failedLampSelection.draw(shapeRenderer, new Color(1f, 1f, 0f, 0.8f), new Color(1f, 1f, 0f, 1));
         }
@@ -488,8 +485,6 @@ public class ClientDisplayWand {
             BlockState currBlockState = curr.blockPos.getBlockState();
 
             if (currBlockState.getBlockId().equals("base:laser_switch")) {
-//                Constants.LOGGER.info("Found potential laser switch {}", curr.blockPos);
-
                 // Check that the laser direction is orthogonal to the laser switch's input face
                 Direction switchDirection = currBlockState.getParamDirection("direction");
                 if (!(
@@ -504,7 +499,6 @@ public class ClientDisplayWand {
                 if (nextBlock == null || !isCausalLaserEmitter(nextBlock.blockPos.getBlockState(), curr.outgoingDir)) { continue; }
 
                 // Indicate that the laser switch was found and end the search branch
-//                Constants.LOGGER.info("Laser switch valid {}", curr.blockPos);
                 foundSwitches.add(curr.blockPos);
                 explored.add(curr.blockPos);
             } else if (currBlockState.getBlockId().equals("base:laser_emitter")) {
@@ -514,12 +508,10 @@ public class ClientDisplayWand {
                 multiscanlineSearchComponent(curr, componentQueue, maxComponentDist);
             } else {
                 // Stop searching further through the solid block
-//                Constants.LOGGER.info("Found solid block {}", curr.blockPos);
                 explored.add(curr.blockPos);
             }
         }
 
-        Constants.LOGGER.info("foundSwitches {}", foundSwitches);
         return foundSwitches;
     }
 
@@ -527,201 +519,14 @@ public class ClientDisplayWand {
         screenSwitches = new ArrayList[getWidthPixels()][getHeightPixels()];
         for (int ix = getWidthPixels() - 1; ix >= 0; ix--) {
             for (int iy = getHeightPixels() - 1; iy >= 0; iy--) {
-                Constants.LOGGER.warn("[{}][{}]", ix, iy);
                 screenSwitches[ix][iy] = breadthFirstSearchSwitches(getPixelLampPos(ix, iy), maxComponentDist, maxTotalDist);
-                Constants.LOGGER.warn("screenSwitches[{}][{}]: {}", ix, iy, screenSwitches[ix][iy]);
             }
         }
         Constants.LOGGER.error("DONE CACHING");
     }
 
-//    public static boolean stepNextSwitch(BlockPosition startPos, ObjectSet<BlockPosition> ignoredBlocks, int maxComponentDist, int maxComponentsTraversed) {
-//        int[][] directions = new int[][]{{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
-//
-//        BlockPosition currPos = startPos.copy();
-//        // Keep searching the next component starting from the last found component
-//        for (int i = 0; i < maxComponentsTraversed; i++) {
-//            // Find the nearest relevant component along each axis
-//            axisLoop:
-//            for (int d = 1; d <= maxComponentDist; d++) { // Iterate distance
-//                for (int iDir = 0; iDir < 6; iDir++) { // Iterate potential directions
-//                    if (directions[iDir] == null) {
-//                        continue;
-//                    }
-//
-//                    // Get potential component's blockPos and blockState
-//                    BlockPosition pos = currPos.getOffsetBlockPos(d * directions[iDir][0], d * directions[iDir][1], d * directions[iDir][2]);
-//                    if (pos == null || ignoredBlocks.contains(pos)) {
-//                        continue;
-//                    } // Do not loop back to the starting point
-//                    BlockState posState = pos.getBlockState();
-//
-//                    // Check that the block is not a directional component such as a laser emitter
-//                    if (posState.getParamDirection("direction") == null) {
-//                        /* Stop searching in directions obstructed by opaque blocks.
-//                         * Subject to inaccuracies for blocks with hitboxes smaller than a full block where lasers are able
-//                         * to pass
-//                         */
-//                        if (!posState.walkThrough && (posState.isOpaque || posState.hasTag(TAG_STOPS_LASERS))) {
-//                            directions[iDir] = null;
-//                        }
-//                        continue;
-//                    }
-//
-//                    boolean axisMatches = (
-//                            posState.getParamDirection("direction").getXOffset() == directions[iDir][0]
-//                                    && posState.getParamDirection("direction").getYOffset() == directions[iDir][1]
-//                                    && posState.getParamDirection("direction").getZOffset() == directions[iDir][2]
-//                    );
-//
-//                    boolean axisInverseMatches = (
-//                            posState.getParamDirection("direction").getXOffset() == -directions[iDir][0]
-//                                    && posState.getParamDirection("direction").getYOffset() == -directions[iDir][1]
-//                                    && posState.getParamDirection("direction").getZOffset() == -directions[iDir][2]
-//                    );
-//
-//                    // Check that we aren't at the laser switch (end goal) yet
-//                    if (!posState.getBlockId().equals("base:laser_switch")) {
-//                        // If the block is a laser emitter, continue searching from there
-//                        if (posState.getBlockId().equals("base:laser_emitter") && axisInverseMatches) {
-//                            currPos = pos;
-//                            break axisLoop;
-//                        }
-//                        continue;
-//                    }
-//
-//                    // If the switch's axis matches, the laser will hit the wrong face thus never passing through.
-//                    if (axisMatches) { continue; }
-//
-//                    for (int j = 1; j < maxComponentDist; j++) {
-//                        BlockPosition nextPos = pos.getOffsetBlockPos(j * directions[iDir][0], j * directions[iDir][1], j * directions[iDir][2]);
-//                        if (nextPos == null) {
-//                            Constants.LOGGER.warn("No block at {} + {}, {}, {}", pos, j * directions[iDir][0], j * directions[iDir][1], j * directions[iDir][2]);
-//                            break;
-//                        }
-//                        BlockState nextPosState = nextPos.getBlockState();
-//                        if (nextPosState.getBlockId().equals("base:laser_emitter")) {
-//                            boolean nextPosAxisInverseMatches;
-//                            if (nextPosState.getParam("type").equals("split")) {
-//                                // Laser Splitter
-//                                nextPosAxisInverseMatches = nextPosState.getParam("axis").equals(
-//                                        directions[iDir][0] != 0 ? "X" :
-//                                                directions[iDir][1] != 0 ? "Y" :
-//                                                        "Z"
-//                                );
-//                            } else if (nextPosState.getParam("type").equals("single")) {
-//                                // Laser Emitter
-//                                String laserSwitchDir = posState.getParam("direction");
-//                                String laserEmitterDir = nextPosState.getParam("direction");
-//
-//                                nextPosAxisInverseMatches = (
-//                                        laserSwitchDir.charAt(laserSwitchDir.length() - 1) == laserEmitterDir.charAt(laserEmitterDir.length() - 1)
-//                                                && !laserSwitchDir.equals(laserEmitterDir)
-//                                );
-//                            } else {
-//                                break;
-//                            }
-//                            if (nextPosState.getBlockId().equals("base:laser_emitter") && nextPosAxisInverseMatches) {
-//                                if (remainingIgnoredSwitches > 0) {
-//                                    remainingIgnoredSwitches--;
-//                                    ignoredBlocks.add(nextPos);
-//                                    break;
-//                                }
-//                                return pos;
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//    }
-
-    public static BlockPosition getSwitchAtIndex(BlockPosition lampPos, int iSwitch, int maxComponentDist) {
-        int remainingIgnoredSwitches = iSwitch;
-        ObjectSet<BlockPosition> ignoredBlocks = ObjectSet.with(lampPos);
-        BlockPosition currPos = lampPos.copy();
-        // Keep searching the next component
-        for (int i = 0; i < 200; i++) {
-            int[][] directions = new int[][]{{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1}};
-
-            // Find the nearest relevant component along each axis
-            axisLoop:
-            for (int d = 1; d <= maxComponentDist; d++) {
-                for (int iDir = 0; iDir < 6; iDir++) {
-                    if (directions[iDir] != null) {
-                        BlockPosition pos = currPos.getOffsetBlockPos(d * directions[iDir][0], d * directions[iDir][1], d * directions[iDir][2]);
-                        if (pos == null || ignoredBlocks.contains(pos)) { continue; } // Do not loop back to the starting point
-                        BlockState posState = pos.getBlockState();
-
-                        if (posState.getParamDirection("direction") != null) {
-                            boolean axisMatches = (
-                                    posState.getParamDirection("direction").getXOffset() == directions[iDir][0]
-                                            && posState.getParamDirection("direction").getYOffset() == directions[iDir][1]
-                                            && posState.getParamDirection("direction").getZOffset() == directions[iDir][2]
-                            );
-
-                            boolean axisInverseMatches = (
-                                    posState.getParamDirection("direction").getXOffset() == -directions[iDir][0]
-                                            && posState.getParamDirection("direction").getYOffset() == -directions[iDir][1]
-                                            && posState.getParamDirection("direction").getZOffset() == -directions[iDir][2]
-                            );
-
-                            if (posState.getBlockId().equals("base:laser_switch")) { // Potentially nearly at the goal
-                                if (axisMatches) { continue; } // The laser will hit the wrong face of the lase switch, thus never passing through.
-
-                                for (int j = 1; j < maxComponentDist; j++) {
-                                    BlockPosition nextPos = pos.getOffsetBlockPos(j * directions[iDir][0], j * directions[iDir][1], j * directions[iDir][2]);
-                                    if (nextPos == null) {
-                                        Constants.LOGGER.warn("No block at {} + {}, {}, {}", pos, j * directions[iDir][0], j * directions[iDir][1], j * directions[iDir][2]);
-                                        break;
-                                    }
-                                    BlockState nextPosState = nextPos.getBlockState();
-                                    if (nextPosState.getBlockId().equals("base:laser_emitter")) {
-                                        boolean nextPosAxisInverseMatches;
-                                        if (nextPosState.getParam("type").equals("split")) {
-                                            // Laser Splitter
-                                            nextPosAxisInverseMatches = nextPosState.getParam("axis").equals(
-                                                    directions[iDir][0] != 0 ? "X" :
-                                                            directions[iDir][1] != 0 ? "Y" :
-                                                                    "Z"
-                                            );
-                                        } else if (nextPosState.getParam("type").equals("single")) {
-                                            // Laser Emitter
-                                            String laserSwitchDir = posState.getParam("direction");
-                                            String laserEmitterDir = nextPosState.getParam("direction");
-
-                                            nextPosAxisInverseMatches = (
-                                                    laserSwitchDir.charAt(laserSwitchDir.length() - 1) == laserEmitterDir.charAt(laserEmitterDir.length() - 1)
-                                                            && !laserSwitchDir.equals(laserEmitterDir)
-                                            );
-                                        } else {
-                                            break;
-                                        }
-                                        if (nextPosState.getBlockId().equals("base:laser_emitter") && nextPosAxisInverseMatches) {
-                                            if (remainingIgnoredSwitches > 0) {
-                                                remainingIgnoredSwitches--;
-                                                ignoredBlocks.add(nextPos);
-                                                break;
-                                            }
-                                            return pos;
-                                        }
-                                    }
-                                }
-                            } else if (posState.getBlockId().equals("base:laser_emitter") && axisInverseMatches) {
-                                currPos = pos;
-                                break axisLoop;
-                            }
-                        } else if (!posState.walkThrough && (posState.isOpaque || posState.hasTag(TAG_STOPS_LASERS))) {
-                            directions[iDir] = null;
-                        }
-                    }
-                }
-            }
-        }
-
-        throw new IndexOutOfBoundsException("Laser Switch search distance limit exceeded! Search failed at " + currPos.toString() + ".");
-//        sendMsg("Laser Switch search distance limit exceeded! Search failed at " + currPos.toString() + ".");
-//        return null;
+    public static BlockPosition getSwitchAtIndex(int x, int y, int frameIndex) {
+        return screenSwitches[x][y].get(frameIndex);
     }
 
     /**
@@ -732,102 +537,20 @@ public class ClientDisplayWand {
      * @return The maximum number of frames that can fit in the display's memory.
      */
     public static int getMaxNumFrames(int maxComponentDist) {
-        int lowest = Integer.MAX_VALUE;
-        for (BlockPosition currLampPos : getAllLampPos()) {
-            lowest = min(lowest, getNumSwitchesForLamp(currLampPos, maxComponentDist));
-        }
+        // Guard against unloaded switches
+        if (screenSwitches == null) { return 0; }
 
-        if (lowest == Integer.MAX_VALUE) { return -1; }
-        return lowest;
-    }
+        int smallest = Integer.MAX_VALUE;
+        for (int ix = getWidthPixels() - 1; ix >= 0; ix--) {
+            for (int iy = getHeightPixels() - 1; iy >= 0; iy--) {
+                if (screenSwitches[ix][iy] == null) { return 0; }
 
-    /**
-     * Get the number of laser switches connected to the lamp at the given block position. Search only for photonic
-     * components within a distance of `maxComponentDist` from each other.
-     *
-     * @param lampPos The target lamp' block position.
-     * @param maxComponentDist The maximal distance between two photonic components that interact with each other.
-     * @return The number of laser switches connected to the target lamp.
-     */
-    public static int getNumSwitchesForLamp(BlockPosition lampPos, int maxComponentDist) {
-        int numSwitches = 0;
-        ObjectSet<BlockPosition> ignoredBlocks = ObjectSet.with(lampPos);
-        BlockPosition currPos = lampPos.copy();
-        // Keep searching the next component
-        for (int i = 0; i < 200; i++) {
-            int[][] directions = new int[][]{{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1}};
-
-            // Find the nearest relevant component along each axis
-            axisLoop:
-            for (int d = 1; d <= maxComponentDist; d++) {
-                for (int iDir = 0; iDir < 6; iDir++) {
-                    if (directions[iDir] != null) {
-                        BlockPosition pos = currPos.getOffsetBlockPos(d * directions[iDir][0], d * directions[iDir][1], d * directions[iDir][2]);
-                        if (pos == null || ignoredBlocks.contains(pos)) { continue; } // Do not loop back to the starting point
-                        BlockState posState = pos.getBlockState();
-
-                        if (posState.getParamDirection("direction") != null) {
-                            boolean axisMatches = (
-                                    posState.getParamDirection("direction").getXOffset() == directions[iDir][0]
-                                            && posState.getParamDirection("direction").getYOffset() == directions[iDir][1]
-                                            && posState.getParamDirection("direction").getZOffset() == directions[iDir][2]
-                            );
-
-                            boolean axisInverseMatches = (
-                                    posState.getParamDirection("direction").getXOffset() == -directions[iDir][0]
-                                            && posState.getParamDirection("direction").getYOffset() == -directions[iDir][1]
-                                            && posState.getParamDirection("direction").getZOffset() == -directions[iDir][2]
-                            );
-
-                            if (posState.getBlockId().equals("base:laser_switch")) { // Potentially nearly at the goal
-                                if (axisMatches) { continue; } // The laser will hit the wrong face of the lase switch, thus never passing through.
-
-                                for (int j = 1; j < maxComponentDist; j++) {
-                                    BlockPosition nextPos = pos.getOffsetBlockPos(j * directions[iDir][0], j * directions[iDir][1], j * directions[iDir][2]);
-                                    BlockState nextPosState = nextPos.getBlockState();
-                                    boolean nextPosAxisInverseMatches;
-                                    if (nextPosState.getBlockId().equals("base:laser_emitter")) {
-                                        if (nextPosState.getParam("type").equals("split")) {
-                                            // Laser Splitter
-                                            nextPosAxisInverseMatches = nextPosState.getParam("axis").equals(
-                                                    directions[iDir][0] != 0 ? "X" :
-                                                            directions[iDir][1] != 0 ? "Y" :
-                                                                    "Z"
-                                            );
-                                        } else if (nextPosState.getParam("type").equals("single")) {
-                                            // Laser Emitter
-                                            String laserSwitchDir = posState.getParam("direction");
-                                            String laserEmitterDir = nextPosState.getParam("direction");
-
-                                            nextPosAxisInverseMatches = (
-                                                    laserSwitchDir.charAt(laserSwitchDir.length() - 1) == laserEmitterDir.charAt(laserEmitterDir.length() - 1)
-                                                            && !laserSwitchDir.equals(laserEmitterDir)
-                                            );
-                                        } else {
-                                            break;
-                                        }
-                                        if (nextPosAxisInverseMatches) {
-                                            numSwitches++;
-                                            ignoredBlocks.add(pos);
-                                            break;
-                                        }
-                                    } else {
-                                        break;
-                                    }
-                                }
-                            } else if (posState.getBlockId().equals("base:laser_emitter") && axisInverseMatches) {
-                                currPos = pos;
-                                break axisLoop;
-                            }
-                        } else if (!posState.walkThrough && (posState.isOpaque || posState.hasTag(TAG_STOPS_LASERS))) {
-                            directions[iDir] = null;
-                        }
-                    }
-                }
+                smallest = min(smallest, screenSwitches[ix][iy].size());
             }
         }
 
-        return numSwitches;
+        if (smallest == Integer.MAX_VALUE) { return 0; }
+        return smallest;
     }
 
 }
