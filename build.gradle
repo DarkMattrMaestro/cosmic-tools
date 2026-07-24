@@ -32,7 +32,7 @@ dependencies {
     clientImplementation "com.github.PuzzlesHQ:cosmic-api:${cosmic_api_version}:merged"
     commonImplementation "com.github.PuzzlesHQ:cosmic-api:${cosmic_api_version}:merged"
 
-    clientImplementation("org.openpnp:opencv:${opencv_version}")
+    clientBundle clientImplementation("org.openpnp:opencv:${opencv_version}")
 }
 
 processCommonResources {
