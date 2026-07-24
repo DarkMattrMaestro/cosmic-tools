@@ -37,25 +37,25 @@ public class ClientDisplayWand {
     private static void setTlPos(BlockPosition val) {
         tlPos = val;
         screenSwitches = null;
-        cacheAllSwitches(10, 20);
+        cacheAllSwitches(MAX_COMPONENT_DIST, MAX_TOTAL_DIST);
     }
 
     private static void setBRPos(BlockPosition val) {
         brPos = val;
         screenSwitches = null;
-        cacheAllSwitches(10, 20);
+        cacheAllSwitches(MAX_COMPONENT_DIST, MAX_TOTAL_DIST);
     }
 
     private static void setHStep(int val) {
         hStep = val;
         screenSwitches = null;
-        cacheAllSwitches(10, 20);
+        cacheAllSwitches(MAX_COMPONENT_DIST, MAX_TOTAL_DIST);
     }
 
     private static void setVStep(int val) {
         vStep = val;
         screenSwitches = null;
-        cacheAllSwitches(10, 20);
+        cacheAllSwitches(MAX_COMPONENT_DIST, MAX_TOTAL_DIST);
     }
 
     private static int selectedPixelX, selectedPixelY = 0;
@@ -86,7 +86,7 @@ public class ClientDisplayWand {
         if (GameState.currentGameState.getClass() != InGame.class) { return false; }
 
         if (button == Input.Buttons.RIGHT) {
-            cacheAllSwitches(10, 20);
+            cacheAllSwitches(MAX_COMPONENT_DIST, MAX_TOTAL_DIST);
             successFailSound(true);
             return true;
         }
@@ -176,15 +176,22 @@ public class ClientDisplayWand {
     }
 
     public static void renderOverlay(ShapeRenderer shapeRenderer) {
-        if (screenSwitches == null) { return; }
-        for (int ix = getWidthPixels() - 1; ix >= 0; ix--) {
-            for (int iy = getHeightPixels() - 1; iy >= 0; iy--) {
-                if (screenSwitches[ix][iy] == null) {
-                    continue;
-                }
+        if (getMaxNumFrames() > 0) {
+            int currFrame = ((int) InGame.getWorld().currentWorldTick) % getMaxNumFrames();
 
-                for (BlockPosition blockPos : screenSwitches[ix][iy]) {
+            if (screenSwitches == null) {
+                return;
+            }
+            for (int ix = getWidthPixels() - 1; ix >= 0; ix--) {
+                for (int iy = getHeightPixels() - 1; iy >= 0; iy--) {
+                    if (screenSwitches[ix][iy] == null) {
+                        continue;
+                    }
+
+//                for (BlockPosition blockPos : screenSwitches[ix][iy]) {
+                    BlockPosition blockPos = screenSwitches[ix][iy].get(currFrame);
                     Selection.of(blockPos, blockPos).draw(shapeRenderer, new Color(0.2f, 0.9333333f, 1f, 0.1f), new Color(0.2f, 0.9333333f, 1f, 0.4f));
+//                }
                 }
             }
         }
@@ -526,17 +533,16 @@ public class ClientDisplayWand {
     }
 
     public static BlockPosition getSwitchAtIndex(int x, int y, int frameIndex) {
-        return screenSwitches[x][y].get(frameIndex);
+        return screenSwitches[x][y].get(screenSwitches[x][y].size() - 1 - frameIndex);
     }
 
     /**
      * Get the maximum number of frames that can fit in the display's memory. This equates to the shortest sequence of
      * consecutive laser switches.
      *
-     * @param maxComponentDist The maximal distance between two photonic components that interact with each other.
      * @return The maximum number of frames that can fit in the display's memory.
      */
-    public static int getMaxNumFrames(int maxComponentDist) {
+    public static int getMaxNumFrames() {
         // Guard against unloaded switches
         if (screenSwitches == null) { return 0; }
 

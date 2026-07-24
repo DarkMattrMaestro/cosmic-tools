@@ -57,7 +57,7 @@ public class CommandLoadVideo extends Command {
 
                 failedLampsSelections.clear();
 
-                int maxFrames = ClientDisplayWand.getMaxNumFrames(10);
+                int maxFrames = ClientDisplayWand.getMaxNumFrames() - 1; // Subtract 1 to compensate for final black frame
                 sendMsg("The display's memory can fit " + maxFrames + " frames (" + (maxFrames / fps) + " seconds of footage).");
                 Constants.LOGGER.info("The display's memory can fit {} frames ({} seconds of footage).", maxFrames, (maxFrames / fps));
 
@@ -88,7 +88,7 @@ public class CommandLoadVideo extends Command {
                     Mat frame = new Mat();
                     int frameIndex = -1;
                     double currTime = newT;
-                    while (vidCap.read(frame) && frameIndex < maxFrames - 1) {
+                    while (vidCap.read(frame) && frameIndex < maxFrames) {
                         // Frame-rate conversion
                         currTime += originalT;
                         if (currTime < newT) { continue; }
@@ -126,7 +126,12 @@ public class CommandLoadVideo extends Command {
                         for (int x = 0; x < scaledFrame.cols(); x++) {
                             for (int y = 0; y < scaledFrame.rows(); y++) {
                                 Constants.LOGGER.warn("x:{} y:{} binaryFrame {} - {}", x, y, binaryFrame, binaryFrame.get(y, x));
-                                double avgColour = Arrays.stream(binaryFrame.get(y, x)).average().orElse(0);
+                                double avgColour;
+                                if (frameIndex < maxFrames) {
+                                    avgColour = Arrays.stream(binaryFrame.get(y, x)).average().orElse(0);
+                                } else {
+                                    avgColour = 0;
+                                }
                                 double lastAvgColour = Arrays.stream(lastBinaryFrame.get(y, x)).average().orElse(0);
 
                                 String powerValue = (avgColour > 0.5 != lastAvgColour > 0.5) ? "on" : "off";
