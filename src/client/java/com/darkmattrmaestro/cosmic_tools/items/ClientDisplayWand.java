@@ -26,8 +26,8 @@ import static java.lang.Math.*;
 
 public class ClientDisplayWand {
     private static final float reachDist = 256.0f;
-    private static final int MAX_COMPONENT_DIST = 32;
-    private static final int MAX_TOTAL_DIST = 10000;
+    private static final int MAX_COMPONENT_DIST = 16;
+    private static final int MAX_TOTAL_DIST = 1000000;
 
     private static BlockPosition tlPos = null; // Top Left
     private static BlockPosition brPos = null; // Bottom Right
@@ -37,25 +37,21 @@ public class ClientDisplayWand {
     private static void setTlPos(BlockPosition val) {
         tlPos = val;
         screenSwitches = null;
-        cacheAllSwitches(MAX_COMPONENT_DIST, MAX_TOTAL_DIST);
     }
 
     private static void setBRPos(BlockPosition val) {
         brPos = val;
         screenSwitches = null;
-        cacheAllSwitches(MAX_COMPONENT_DIST, MAX_TOTAL_DIST);
     }
 
     private static void setHStep(int val) {
         hStep = val;
         screenSwitches = null;
-        cacheAllSwitches(MAX_COMPONENT_DIST, MAX_TOTAL_DIST);
     }
 
     private static void setVStep(int val) {
         vStep = val;
         screenSwitches = null;
-        cacheAllSwitches(MAX_COMPONENT_DIST, MAX_TOTAL_DIST);
     }
 
     private static int selectedPixelX, selectedPixelY = 0;
@@ -487,7 +483,7 @@ public class ClientDisplayWand {
             // Check if the block was already traversed
             if (explored.contains(curr.blockPos)) { continue; }
             // Prevent being stuck in an accidental loop
-            if (curr.distFromComponent > maxTotalDist) { continue; }
+//            if (curr.distFromComponent > maxTotalDist) { continue; }
 
             BlockState currBlockState = curr.blockPos.getBlockState();
 
