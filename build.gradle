@@ -32,7 +32,7 @@ dependencies {
     clientImplementation "com.github.PuzzlesHQ:cosmic-api:${cosmic_api_version}:merged"
     commonImplementation "com.github.PuzzlesHQ:cosmic-api:${cosmic_api_version}:merged"
 
-    clientBundle clientImplementation("org.openpnp:opencv:${opencv_version}")
+    clientImplementation("org.openpnp:opencv:${opencv_version}")
 }
 
 processCommonResources {
@@ -48,12 +48,14 @@ processCommonResources {
             "cosmic_reach_version": cosmic_reach_version,
             "puzzle_loader_cosmic_version": puzzle_loader_cosmic_version,
             "puzzle_loader_core_version": puzzle_loader_core_version,
-            "cosmic_api_version": cosmic_api_version
+            "cosmic_api_version": cosmic_api_version,
+
+            "opencv_version": opencv_version
     ]
 
     inputs.properties projectProperties
 
-    filesMatching(["puzzle.mod.json"]) {
+    filesMatching(["puzzle.mod.json", "CommandLoadVideo.class"]) {
         expand projectProperties
     }
 }

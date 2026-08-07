@@ -6,6 +6,7 @@ import com.darkmattrmaestro.cosmic_tools.items.ClientDisplayWand;
 import com.darkmattrmaestro.cosmic_tools.utils.ChunkUtils;
 import com.darkmattrmaestro.cosmic_tools.utils.Selection;
 import com.darkmattrmaestro.cosmic_tools.utils.SoundUtils;
+import dev.puzzleshq.puzzleloader.loader.launch.Piece;
 import finalforeach.cosmicreach.blocks.BlockPosition;
 import finalforeach.cosmicreach.blocks.BlockState;
 import finalforeach.cosmicreach.chat.IChat;
@@ -15,7 +16,6 @@ import finalforeach.cosmicreach.networking.client.ClientNetworkManager;
 import finalforeach.cosmicreach.networking.packets.blocks.BlockReplacePacket;
 import finalforeach.cosmicreach.world.Chunk;
 import nu.pattern.OpenCV;
-import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
@@ -24,26 +24,66 @@ import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.Videoio;
 
 import java.io.File;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.darkmattrmaestro.cosmic_tools.utils.ChatUtils.sendMsg;
+import static com.darkmattrmaestro.cosmic_tools.utils.DependencyUtils.downloadOpenCV;
 
 public class CommandLoadVideo extends Command {
-//    static {
-//        OpenCV.loadShared();
-//    }
 
     public static Array<Selection> failedLampsSelections = new Array<>();
 
     public void run(IChat chat) {
         super.run(chat);
+
+//        try {
+//            Class.forName("OpenCV");
+//        } catch (Exception e) {
+//            sendMsg("OpenCV is required to load videos! Download version ${opencv_version} " + System.getProperty("gradle.opencv_version") + " from https://opencv.org/releases/");
+////            Constants.LOGGER.error("OpenCV is required to load videos! Download version {} from https://opencv.org/releases/", System.getProperties());
+////            return;
+//
+//            try {
+//                Piece.classLoader.addURL((new URI("https://mvnrepository.com/artifact/org.openpnp/opencv/4.9.0-0")).toURL());
+//            } catch (MalformedURLException | URISyntaxException ex) {
+//                throw new RuntimeException(ex);
+//            }
+//        }
+
         switch (this.getNumberOfArgs()) {
-            case 1: {
-                break;
+            case 1: { // /load_video opencv
+                String param = this.getNextArg();
+                if (param.equalsIgnoreCase("opencv")) {
+                    downloadOpenCV();
+                } else {
+                    sendMsg("Invalid arguments!");
+                }
+
+                Constants.LOGGER.info("\nNow:");
+
+                Piece.classLoader.sources.forEach((URL url) -> {
+                    if (!url.getFile().toLowerCase().contains("opencv")) { return; }
+                    Constants.LOGGER.warn(url.getFile());
+                });
+
+                return;
             }
             case 2: { // /load_video fps file_location
+                AtomicBoolean foundOpenCV = new AtomicBoolean(false);
+                Piece.classLoader.sources.forEach((URL url) -> {
+                    if (url.getFile().toLowerCase().contains("opencv-4.9.0-0")) { foundOpenCV.set(true); }
+                });
+
+                if (!foundOpenCV.get()) {
+                    sendMsg("OpenCV is required to load videos! Use the command `/load_video OpenCV` to download it, or download it manually from https://opencv.org/releases/");
+                    return;
+                }
+
+
                 if (ClientDisplayWand.getTLPos() == null || ClientDisplayWand.getBRPos() == null) {
                     sendMsg("No lamps were selected to form the display!");
                     return;
@@ -69,7 +109,6 @@ public class CommandLoadVideo extends Command {
                     return;
                 }
 
-//                System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
                 OpenCV.loadShared();
 
                 try {
