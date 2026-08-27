@@ -32,6 +32,8 @@ dependencies {
     clientImplementation "com.github.PuzzlesHQ:cosmic-api:${cosmic_api_version}:merged"
     commonImplementation "com.github.PuzzlesHQ:cosmic-api:${cosmic_api_version}:merged"
 
+    clientImplementation("com.github.DarkMattrMaestro:imgui-integration:${imgui_integration_version}")
+
     clientImplementation("org.openpnp:opencv:${opencv_version}")
 }
 
