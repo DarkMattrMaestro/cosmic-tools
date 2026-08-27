@@ -56,6 +56,7 @@ public class CommandLoadVideo extends Command {
         failedLampsSelections.clear();
 
         int maxFrames = ClientDisplayWand.getMaxNumFrames() - 1; // Subtract 1 to compensate for final black frame
+        if (maxFrames < 1) { return "The display's memory cannot fit any frames (including final buffer frame)!"; }
         sendMsg("The display's memory can fit " + maxFrames + " frames (" + (maxFrames / fps) + " seconds of footage).");
         Constants.LOGGER.info("The display's memory can fit {} frames ({} seconds of footage).", maxFrames, (maxFrames / fps));
 
