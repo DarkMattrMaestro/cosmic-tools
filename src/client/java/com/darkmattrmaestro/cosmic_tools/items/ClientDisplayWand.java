@@ -5,7 +5,6 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.ObjectSet;
 import com.darkmattrmaestro.cosmic_tools.Constants;
 import com.darkmattrmaestro.cosmic_tools.commands.CommandLoadVideo;
 import com.darkmattrmaestro.cosmic_tools.utils.*;
@@ -518,6 +517,10 @@ public class ClientDisplayWand {
         return foundSwitches;
     }
 
+    public static void cacheAllSwitches() {
+        cacheAllSwitches(MAX_COMPONENT_DIST, MAX_TOTAL_DIST);
+    }
+
     public static void cacheAllSwitches(int maxComponentDist, int maxTotalDist) {
         screenSwitches = new ArrayList[getWidthPixels()][getHeightPixels()];
         for (int ix = getWidthPixels() - 1; ix >= 0; ix--) {
@@ -540,7 +543,7 @@ public class ClientDisplayWand {
      */
     public static int getMaxNumFrames() {
         // Guard against unloaded switches
-        if (screenSwitches == null) { return 0; }
+        if (screenSwitches == null) { return -1; }
 
         int smallest = Integer.MAX_VALUE;
         for (int ix = getWidthPixels() - 1; ix >= 0; ix--) {
