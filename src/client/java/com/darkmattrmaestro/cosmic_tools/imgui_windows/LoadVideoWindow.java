@@ -25,12 +25,19 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static com.darkmattrmaestro.cosmic_tools.commands.CommandLoadVideo.loadVideo;
 import static com.darkmattrmaestro.cosmic_tools.utils.DependencyUtils.downloadOpenCV;
 
+enum BitStorageMode {
+    SWITCH,
+    SPLITTER
+}
+
 public class LoadVideoWindow extends ImGuiWindow {
     private final ImBoolean SHOW = new ImBoolean(true);
     private final ImFloat FPS = new ImFloat(5);
     private final ImString FILENAME = new ImString();
 
     private final ImString ERROR_MSG = new ImString();
+
+    private BitStorageMode bitStorageMode = BitStorageMode.SWITCH;
 
     private boolean opencv_dirty = true;
     private boolean found_opencv = false;
@@ -61,6 +68,30 @@ public class LoadVideoWindow extends ImGuiWindow {
                 FILENAME.set(file.getAbsolutePath());
             }
         })).start();
+    }
+
+    private void renderBitStorageModeSelection() {
+        if (ImGui.beginTabBar("Bit storage mode")) {
+            if (ImGui.beginTabItem("Laser Switch")) {
+                this.bitStorageMode = BitStorageMode.SWITCH;
+                ImGui.text("""
+                    This mode uses the on/off state of
+                    a laser switch to encode a bit as
+                    changing or not.""");
+                ImGui.endTabItem();
+            }
+
+            if (ImGui.beginTabItem("Laser Splitter")) {
+                this.bitStorageMode = BitStorageMode.SPLITTER;
+                ImGui.text("""
+                    This mode uses the splitter/emitter
+                    state of a laser switch to encode a
+                    bit as changing or not.""");
+                ImGui.endTabItem();
+            }
+
+            ImGui.endTabBar();
+        }
     }
 
     @Override
@@ -122,7 +153,10 @@ public class LoadVideoWindow extends ImGuiWindow {
                     selectVideoFileDialog();
                 }
 
-                ImGui.spacing();
+                // Bit storage mode selector
+                renderBitStorageModeSelection();
+
+                ImGui.dummy(0f, 20f);
 
                 if (ImGui.button("Load Video")) {
                     String res = loadVideo(FPS.get(), FILENAME.get());
