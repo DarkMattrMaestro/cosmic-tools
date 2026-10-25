@@ -50,6 +50,17 @@ public class ChunkUtils {
         if(single) GameSingletons.meshGenThread.requestImmediateResorting();
     }
 
+    /**
+     * Set a block entity at the given block position, where the new block entity is a duplicate not linked to the
+     * provided block entity. Not referencing the same object ensures that both blocks at different positions refer to
+     * separate block entity objects.
+     *
+     * @param zone zone of the new blocks
+     * @param block descriptor for the new block
+     * @param x new block's x position
+     * @param y new block's y position
+     * @param z new block's z position
+     */
     public static void setBlockEntity(Zone zone, MainBlockDescriptor block, int x, int y, int z) {
         int cx = Math.floorDiv(x, 16);
         int cy = Math.floorDiv(y, 16);
@@ -61,49 +72,20 @@ public class ChunkUtils {
             zone.addChunk(c);
         }
 
-        // Attempt 1
-
         // Write to byte array
         CRBinSerializer serial = new CRBinSerializer();
         serial.reset();
         block.blockEntity.write(serial);
         byte[] tempBytes = serial.toBytes();
 
-        Constants.LOGGER.info("Read byteArray: {}", tempBytes);
-
         // Read back from byte array, creating new object
         CRBinDeserializer deserializer = new CRBinDeserializer();
         deserializer.prepareForRead(ByteBuffer.wrap(tempBytes));
         BlockEntity entity = BlockEntityCreator.getBlockEntityCreator(block.blockEntity.getBlockEntityId()).create(block.blockState, zone, x, y, z);
-        Constants.LOGGER.warn(entity);
-        Constants.LOGGER.warn(BlockEntityCreator.getBlockEntityCreator(block.blockEntity.getBlockEntityId()));
         if (entity != null) {
-            Constants.LOGGER.warn("Entity not null");
             entity.read(deserializer);
-        } else {
-            Constants.LOGGER.warn("Entity is null!");
         }
 
-
-//        // Attempt 2
-//
-//        BlockEntity newBlockEntity = BlockEntityCreator.get(block.blockState, zone, x, y, z);
-//
-//        for (Field field : block.blockEntity.getClass().getFields()) {
-////            if (Arrays.asList((new String[]{"signalMap"})).contains(field.getName())) {
-////                continue;
-////            }
-//            try {
-//                field.setAccessible(true);
-//                Object resObj = field.get(block.blockEntity);
-//                Constants.LOGGER.info("Copied field {}", field.getName());
-//                field.set(newBlockEntity, resObj);
-//            } catch (Exception _) {
-//                Constants.LOGGER.warn("Could not set field {}", field.getName());
-//            }
-//        }
-//
-//        newBlockEntity.setGlobalPosition(x, y, z);
         c.setBlockEntityDirect(block.blockState, entity, x, y, z, false);
     }
 }
