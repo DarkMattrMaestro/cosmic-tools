@@ -5,16 +5,15 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.darkmattrmaestro.cosmic_tools.Constants;
-import com.darkmattrmaestro.cosmic_tools.packets.PasteBlocksPacket;
 import com.darkmattrmaestro.cosmic_tools.utils.*;
 import finalforeach.cosmicreach.blocks.BlockPosition;
 import finalforeach.cosmicreach.blocks.BlockState;
 import finalforeach.cosmicreach.blocks.MissingBlockStateResult;
+import finalforeach.cosmicreach.blocks.blockentities.BlockEntity;
 import finalforeach.cosmicreach.gameevents.blockevents.BlockEventTrigger;
 import finalforeach.cosmicreach.gamestates.GameState;
 import finalforeach.cosmicreach.gamestates.InGame;
 import finalforeach.cosmicreach.items.ItemStack;
-import finalforeach.cosmicreach.networking.client.ClientNetworkManager;
 import finalforeach.cosmicreach.ui.UI;
 import finalforeach.cosmicreach.util.Identifier;
 import finalforeach.cosmicreach.world.Chunk;
@@ -127,14 +126,14 @@ public class ClientSelectionWand {
         for (int x = 0; x < selection.sizeX(); x++) {
             for (int y = 0; y < selection.sizeY(); y++) {
                 for (int z = 0; z < selection.sizeZ(); z++) {
-                    BlockState blockState = BlockPosition.ofGlobal(
+                    BlockPosition blockPos = BlockPosition.ofGlobal(
                             InGame.getLocalPlayer().getZone(),
                             minX + x,
                             minY + y,
                             minZ + z
-                    ).getBlockState();
+                    );
 
-                    copiedVolume.setBlock(x, y, z, blockState);
+                    copiedVolume.setBlock(x, y, z, blockPos.getBlockState(), blockPos.getBlockEntity());
                 }
             }
         }
@@ -142,7 +141,7 @@ public class ClientSelectionWand {
         return true;
     }
 
-    public static BlockState getMappedCoords(int x, int y, int z) {
+    public static MainBlockDescriptor getMappedCoords(int x, int y, int z) {
         int mappedX = invertX ? (copiedVolume.getSizeX() - 1 - x) : x;
         int mappedY = invertY ? (copiedVolume.getSizeY() - 1 - y) : y;
         int mappedZ = invertZ ? (copiedVolume.getSizeZ() - 1 - z) : z;
@@ -164,7 +163,8 @@ public class ClientSelectionWand {
         for (int x = 0, pasteX = pasteStartPos.getGlobalX(); x < copiedVolume.getSizeX(); x++, pasteX++) {
             for (int y = 0, pasteY = pasteStartPos.getGlobalY(); y < copiedVolume.getSizeY(); y++, pasteY++) {
                 for (int z = 0, pasteZ = pasteStartPos.getGlobalZ(); z < copiedVolume.getSizeZ(); z++, pasteZ++) {
-                    BlockState blockState = getMappedCoords(x, y, z);
+                    MainBlockDescriptor block = getMappedCoords(x, y, z);
+                    BlockState blockState = block.blockState;
 
                     if (blockState.getParamDirection("direction") != null && (
                             (invertX && blockState.getParamDirection("direction").isXAxis()) ||
@@ -175,6 +175,7 @@ public class ClientSelectionWand {
                     }
 
                     zone.setBlockState(blockState, pasteX, pasteY, pasteZ);
+                    ChunkUtils.setBlockEntity(zone, block, pasteX, pasteY, pasteZ);
                     Chunk c = zone.getChunkAtBlock(pasteX, pasteY, pasteZ);
                     if (!chunksToUpdate.contains(c)) {
                         chunksToUpdate.add(c);
