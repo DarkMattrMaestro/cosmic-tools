@@ -62,6 +62,7 @@ public class ChunkUtils {
      * @param z new block's z position
      */
     public static void setBlockEntity(Zone zone, MainBlockDescriptor block, int x, int y, int z) {
+        if (block.blockEntity == null) { return; }
         int cx = Math.floorDiv(x, 16);
         int cy = Math.floorDiv(y, 16);
         int cz = Math.floorDiv(z, 16);
@@ -84,8 +85,10 @@ public class ChunkUtils {
         BlockEntity entity = BlockEntityCreator.getBlockEntityCreator(block.blockEntity.getBlockEntityId()).create(block.blockState, zone, x, y, z);
         if (entity != null) {
             entity.read(deserializer);
+            entity.setGlobalPosition(x, y, z);
+            c.setBlockEntityDirect(block.blockState, entity, x, y, z, true);
+        } else {
+            Constants.LOGGER.warn("Could not copy block entity to {} {} {}", x, y, z);
         }
-
-        c.setBlockEntityDirect(block.blockState, entity, x, y, z, false);
     }
 }
