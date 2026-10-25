@@ -1,13 +1,20 @@
 package com.darkmattrmaestro.cosmic_tools.utils;
 
+import com.badlogic.gdx.utils.ByteArray;
+import com.darkmattrmaestro.cosmic_tools.Constants;
 import finalforeach.cosmicreach.blocks.blockentities.BlockEntity;
 import finalforeach.cosmicreach.blocks.blockentities.BlockEntityCreator;
+import finalforeach.cosmicreach.savelib.IByteArray;
+import finalforeach.cosmicreach.savelib.crbin.CRBinDeserializer;
+import finalforeach.cosmicreach.savelib.crbin.CRBinSerializer;
+import finalforeach.cosmicreach.savelib.utils.DynamicArrays;
 import finalforeach.cosmicreach.singletons.GameSingletons;
 import finalforeach.cosmicreach.lighting.LightPropagator;
 import finalforeach.cosmicreach.world.Chunk;
 import finalforeach.cosmicreach.world.Zone;
 
 import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 
@@ -54,21 +61,49 @@ public class ChunkUtils {
             zone.addChunk(c);
         }
 
-        BlockEntity newBlockEntity = BlockEntityCreator.get(block.blockState, zone, x, y, z);
+        // Attempt 1
 
-        for (Field field : block.blockEntity.getClass().getFields()) {
-            if (Arrays.asList((new String[]{"signalMap"})).contains(field.getName())) {
-                continue;
-            }
-            try {
-                field.setAccessible(true);
-                Object resObj = field.get(block.blockEntity);
-                field.set(newBlockEntity, resObj);
-            } catch (Exception _) {
-            }
+        // Write to byte array
+        CRBinSerializer serial = new CRBinSerializer();
+        serial.reset();
+        block.blockEntity.write(serial);
+        byte[] tempBytes = serial.toBytes();
+
+        Constants.LOGGER.info("Read byteArray: {}", tempBytes);
+
+        // Read back from byte array, creating new object
+        CRBinDeserializer deserializer = new CRBinDeserializer();
+        deserializer.prepareForRead(ByteBuffer.wrap(tempBytes));
+        BlockEntity entity = BlockEntityCreator.getBlockEntityCreator(block.blockEntity.getBlockEntityId()).create(block.blockState, zone, x, y, z);
+        Constants.LOGGER.warn(entity);
+        Constants.LOGGER.warn(BlockEntityCreator.getBlockEntityCreator(block.blockEntity.getBlockEntityId()));
+        if (entity != null) {
+            Constants.LOGGER.warn("Entity not null");
+            entity.read(deserializer);
+        } else {
+            Constants.LOGGER.warn("Entity is null!");
         }
 
-        newBlockEntity.setGlobalPosition(x, y, z);
-        c.setBlockEntityDirect(block.blockState, newBlockEntity, x, y, z, false);
+
+//        // Attempt 2
+//
+//        BlockEntity newBlockEntity = BlockEntityCreator.get(block.blockState, zone, x, y, z);
+//
+//        for (Field field : block.blockEntity.getClass().getFields()) {
+////            if (Arrays.asList((new String[]{"signalMap"})).contains(field.getName())) {
+////                continue;
+////            }
+//            try {
+//                field.setAccessible(true);
+//                Object resObj = field.get(block.blockEntity);
+//                Constants.LOGGER.info("Copied field {}", field.getName());
+//                field.set(newBlockEntity, resObj);
+//            } catch (Exception _) {
+//                Constants.LOGGER.warn("Could not set field {}", field.getName());
+//            }
+//        }
+//
+//        newBlockEntity.setGlobalPosition(x, y, z);
+        c.setBlockEntityDirect(block.blockState, entity, x, y, z, false);
     }
 }
