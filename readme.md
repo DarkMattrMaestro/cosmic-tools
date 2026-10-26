@@ -2,7 +2,7 @@
 
 This mod adds various tools in the form of items that can make repetitive tasks easier.
 
-> ![NOTE]
+> [!NOTE]
 > This mod was previously compatible with servers, however that has not been a focus for the present version.
 > This is to allow time to focus on just implementing the core features.
 
