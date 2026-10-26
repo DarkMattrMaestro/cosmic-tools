@@ -1,10 +1,14 @@
 .gradle/
 run/
 runs/
+old_builds
+run
+runs
+scythe.psd
+.metadata
 
 build/
 old_builds/
-bin/
 
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
