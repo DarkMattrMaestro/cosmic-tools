@@ -4,7 +4,6 @@
   "package": "com.darkmattrmaestro.cosmic_tools.mixins.common",
   "compatibilityLevel": "JAVA_24",
   "mixins": [
-    "CraftingRecipesMixin"
   ],
   "server": [
   ],

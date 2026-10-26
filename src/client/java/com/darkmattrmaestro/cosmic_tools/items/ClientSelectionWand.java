@@ -1,0 +1,417 @@
+package com.darkmattrmaestro.cosmic_tools.items;
+
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.darkmattrmaestro.cosmic_tools.Constants;
+import com.darkmattrmaestro.cosmic_tools.utils.*;
+import finalforeach.cosmicreach.blocks.BlockPosition;
+import finalforeach.cosmicreach.blocks.BlockState;
+import finalforeach.cosmicreach.blocks.MissingBlockStateResult;
+import finalforeach.cosmicreach.blocks.blockentities.BlockEntity;
+import finalforeach.cosmicreach.gameevents.blockevents.BlockEventTrigger;
+import finalforeach.cosmicreach.gamestates.GameState;
+import finalforeach.cosmicreach.gamestates.InGame;
+import finalforeach.cosmicreach.items.ItemStack;
+import finalforeach.cosmicreach.ui.UI;
+import finalforeach.cosmicreach.util.Identifier;
+import finalforeach.cosmicreach.world.Chunk;
+import finalforeach.cosmicreach.world.Zone;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.darkmattrmaestro.cosmic_tools.utils.BlockSelectionUtil.*;
+import static com.darkmattrmaestro.cosmic_tools.utils.ChatUtils.blockPosToString;
+import static com.darkmattrmaestro.cosmic_tools.utils.ChatUtils.sendMsg;
+import static com.darkmattrmaestro.cosmic_tools.utils.SoundUtils.scrollSound;
+import static com.darkmattrmaestro.cosmic_tools.utils.SoundUtils.successFailSound;
+
+public class ClientSelectionWand {
+    private static final float reachDist = 256.0f;
+
+    private static BlockPosition firstPos = null;
+    private static BlockPosition secondPos = null;
+
+    private static BlockPosition pasteStartPos = null;
+
+    private static Volume copiedVolume = null;
+
+    private static boolean invertX = false;
+    private static boolean invertY = false;
+    private static boolean invertZ = false;
+    private static final Color invertColour = new Color(1, 0, 0, 0.8f);
+    private static final float invertWidth = 0.064f;
+
+    private static RenderSelections renderSelection = RenderSelections.PasteSelection;
+
+    public static Selection getFirstSelection() {
+        if (firstPos == null) return null;
+        return Selection.of(firstPos, firstPos);
+    }
+
+    public static Selection getSecondSelection() {
+        if (secondPos == null) return null;
+        return Selection.of(secondPos, secondPos);
+    }
+
+    public static Selection getSelection() {
+        if (firstPos == null || secondPos == null) return null;
+        return Selection.of(firstPos, secondPos);
+    }
+
+    public static Selection getPasteSelection(){
+        if(pasteStartPos == null || firstPos == null || secondPos == null) return null;
+        return Selection.of(firstPos, secondPos).reposition(pasteStartPos);
+    }
+
+    public static Selection getPastePositionSelection(){
+        if(pasteStartPos == null) return null;
+        return Selection.of(pasteStartPos, pasteStartPos);
+    }
+
+    public static void viewDirShiftPosition(int shift, int rotation) {
+        Vector3Int offset = (rotation == 2 ? upViewDir() : rotation == 1 ? rightViewDir() : primaryViewDir()).mult(shift);
+
+        switch (renderSelection) {
+            case FirstPos -> {
+                firstPos = firstPos.getOffsetBlockPos(offset.x, offset.y, offset.z);
+            }
+            case SecondPos -> {
+                secondPos = secondPos.getOffsetBlockPos(offset.x, offset.y, offset.z);
+            }
+            case CopySelection -> {
+                firstPos = firstPos.getOffsetBlockPos(offset.x, offset.y, offset.z);
+                secondPos = secondPos.getOffsetBlockPos(offset.x, offset.y, offset.z);
+            }
+            case PasteSelection -> {
+                pasteStartPos = pasteStartPos.getOffsetBlockPos(offset.x, offset.y, offset.z);
+            }
+        }
+    }
+
+    public static boolean onMousePressed(int button) {
+        if (GameState.currentGameState.getClass() != InGame.class) { return false; }
+
+        ItemStack selected = UI.hotbar.getSelectedItemStack();
+        if (selected == null || !Identifier.of(Constants.MOD_ID, "selection_wand").toString().equals(selected.getItem().getID())) {
+            return false;
+        }
+
+        int shift = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) ? 1 : Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT) ? 2 : 0;
+        if (button == Input.Buttons.FORWARD) {
+            viewDirShiftPosition(1, shift);
+            scrollSound();
+        } else if (button == Input.Buttons.BACK) {
+            viewDirShiftPosition(-1, shift);
+            scrollSound();
+        }
+
+        return false;
+    }
+
+    public static boolean copyBlocks() {
+        Selection selection = getSelection();
+        if (selection == null) {
+            Constants.LOGGER.warn("Tried to copy but no selection was made!");
+            return false;
+        }
+
+        copiedVolume = Volume.of(selection.sizeX(), selection.sizeY(), selection.sizeZ());
+
+        int minX = selection.minPos.x;
+        int minY = selection.minPos.y;
+        int minZ = selection.minPos.z;
+        for (int x = 0; x < selection.sizeX(); x++) {
+            for (int y = 0; y < selection.sizeY(); y++) {
+                for (int z = 0; z < selection.sizeZ(); z++) {
+                    BlockPosition blockPos = BlockPosition.ofGlobal(
+                            InGame.getLocalPlayer().getZone(),
+                            minX + x,
+                            minY + y,
+                            minZ + z
+                    );
+
+                    copiedVolume.setBlock(x, y, z, blockPos.getBlockState(), blockPos.getBlockEntity());
+                }
+            }
+        }
+
+        return true;
+    }
+
+    public static MainBlockDescriptor getMappedCoords(int x, int y, int z) {
+        int mappedX = invertX ? (copiedVolume.getSizeX() - 1 - x) : x;
+        int mappedY = invertY ? (copiedVolume.getSizeY() - 1 - y) : y;
+        int mappedZ = invertZ ? (copiedVolume.getSizeZ() - 1 - z) : z;
+
+        return copiedVolume.getBlock(mappedX, mappedY, mappedZ);
+    }
+
+    public static boolean pasteBlocks() {
+        if (pasteStartPos == null) {
+            sendMsg("Tried to paste but no paste location was set!");
+            return false;
+        }
+
+        List<Chunk> chunksToUpdate = new ArrayList<>();
+        String triggerName = "onPlace";
+
+        Zone zone = InGame.getLocalPlayer().getZone();
+
+        for (int x = 0, pasteX = pasteStartPos.getGlobalX(); x < copiedVolume.getSizeX(); x++, pasteX++) {
+            for (int y = 0, pasteY = pasteStartPos.getGlobalY(); y < copiedVolume.getSizeY(); y++, pasteY++) {
+                for (int z = 0, pasteZ = pasteStartPos.getGlobalZ(); z < copiedVolume.getSizeZ(); z++, pasteZ++) {
+                    MainBlockDescriptor block = getMappedCoords(x, y, z);
+                    BlockState blockState = block.blockState;
+
+                    if (blockState.getParamDirection("direction") != null && (
+                            (invertX && blockState.getParamDirection("direction").isXAxis()) ||
+                            (invertY && blockState.getParamDirection("direction").isYAxis()) ||
+                            (invertZ && blockState.getParamDirection("direction").isZAxis())
+                    )) {
+                        blockState = blockState.getVariantWithParam("direction", DirMap.dirToString(blockState.getParamDirection("direction").getOpposite()));
+                    }
+
+                    zone.setBlockState(blockState, pasteX, pasteY, pasteZ);
+                    ChunkUtils.setBlockEntity(zone, block, pasteX, pasteY, pasteZ);
+                    Chunk c = zone.getChunkAtBlock(pasteX, pasteY, pasteZ);
+                    if (!chunksToUpdate.contains(c)) {
+                        chunksToUpdate.add(c);
+                    }
+
+                    BlockEventTrigger[] triggers = blockState.getTrigger(triggerName);
+//                    if (triggers != null) {
+//                        if (GameSingletons.isHost) {
+//                            BlockEventArgs args = new BlockEventArgs();
+//                            args.srcPlayer = InGame.getLocalPlayer();
+//                            args.srcBlockState = blockPos.getBlockState();
+//                            args.zone = zone;
+//                            args.blockPos = blockPos;
+//    //                        for (GameEventTrigger trigger: triggers) {
+//    //                            Constants.LOGGER.warn("Triggers: {}", trigger.getAction());
+//    //                        }
+//                            args.run(triggers);
+//                            args.runScheduledTriggers();
+//                        }
+//                    }
+                }
+            }
+        }
+
+        // TODO: Make compatible with server
+//        if (ClientNetworkManager.isConnected()) {
+//            List<BlockPosition> offsetBlocks = clientSpatula.copyBlocks.blocks.stream().map((BlockPosition blockPos) -> {
+//                return blockPos.getOffsetBlockPos(clientSpatula.blockAxis.axis.x, clientSpatula.blockAxis.axis.y, clientSpatula.blockAxis.axis.z);
+//            }).toList();
+//            ClientNetworkManager.sendAsClient(new PasteBlocksPacket(BlockMappings.ofZonePositions(zone, offsetBlocks)));
+//        }
+
+        ChunkUtils.remesh(chunksToUpdate, zone);
+
+        return true;
+    }
+
+    public static boolean clearBlocks() {
+        if (pasteStartPos == null) {
+            sendMsg("Tried to paste but no paste location was set!");
+            return false;
+        }
+
+        List<Chunk> chunksToUpdate = new ArrayList<>();
+        String triggerName = "onPlace";
+
+        Zone zone = InGame.getLocalPlayer().getZone();
+
+        BlockState airBlockState = BlockState.getInstance("base:air", MissingBlockStateResult.MISSING_OBJECT);
+
+        for (int x = 0, pasteX = Math.min(firstPos.getGlobalX(), secondPos.getGlobalX()); x < copiedVolume.getSizeX(); x++, pasteX++) {
+            for (int y = 0, pasteY = Math.min(firstPos.getGlobalY(), secondPos.getGlobalY()); y < copiedVolume.getSizeY(); y++, pasteY++) {
+                for (int z = 0, pasteZ = Math.min(firstPos.getGlobalZ(), secondPos.getGlobalZ()); z < copiedVolume.getSizeZ(); z++, pasteZ++) {
+                    zone.setBlockState(airBlockState, pasteX, pasteY, pasteZ);
+                    Chunk c = zone.getChunkAtBlock(pasteX, pasteY, pasteZ);
+                    if (!chunksToUpdate.contains(c)) {
+                        chunksToUpdate.add(c);
+                    }
+                }
+            }
+        }
+
+        // TODO: Make compatible with server
+//        if (ClientNetworkManager.isConnected()) {
+//            List<BlockPosition> offsetBlocks = clientSpatula.copyBlocks.blocks.stream().map((BlockPosition blockPos) -> {
+//                return blockPos.getOffsetBlockPos(clientSpatula.blockAxis.axis.x, clientSpatula.blockAxis.axis.y, clientSpatula.blockAxis.axis.z);
+//            }).toList();
+//            ClientNetworkManager.sendAsClient(new PasteBlocksPacket(BlockMappings.ofZonePositions(zone, offsetBlocks)));
+//        }
+
+        ChunkUtils.remesh(chunksToUpdate, zone);
+
+        return true;
+    }
+
+    public static boolean duplicateBlocks() {
+        return copyBlocks() && pasteBlocks();
+    }
+
+    public static boolean cutBlocks() {
+        return copyBlocks() && clearBlocks() && pasteBlocks();
+    }
+
+    public static boolean onKeyPressed(int keycode) {
+        boolean captured = true;
+
+        switch (keycode) {
+            case Input.Keys.D -> { // Duplicate selection
+                if (Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) && Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT)) {
+                    successFailSound(duplicateBlocks());
+                }
+            }
+            case Input.Keys.X -> { // Cut selection
+                if (Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) && Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT)) {
+                    successFailSound(cutBlocks());
+                }
+            }
+            case Input.Keys.C -> { // Copy selection
+                if (Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) && Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT)) {
+                    successFailSound(copyBlocks());
+                }
+            }
+            case Input.Keys.V -> { // Paste copied selection
+                if (Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) && Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT)) {
+                    successFailSound(pasteBlocks());
+                }
+            }
+            case Input.Keys.NUMPAD_0 -> { // Switch active selection
+                renderSelection = RenderSelections.values()[(renderSelection.ordinal() + 1) % RenderSelections.values().length];
+            }
+            case Input.Keys.NUMPAD_1 -> { // Flip Z axis
+                invertX = !invertX;
+                sendMsg("X axis is now " + (invertX ? "" : "NOT ") + "inverted");
+                scrollSound();
+            }
+            case Input.Keys.NUMPAD_2 -> { // Flip Z axis
+                invertY = !invertY;
+                sendMsg("Y axis is now " + (invertY ? "" : "NOT ") + "inverted");
+                scrollSound();
+            }
+            case Input.Keys.NUMPAD_3 -> { // Flip Z axis
+                invertZ = !invertZ;
+                sendMsg("Z axis is now " + (invertZ ? "" : "NOT ") + "inverted");
+                scrollSound();
+            }
+            default -> {
+                captured = false;
+            }
+        }
+
+        if (captured) { return true; }
+        captured = true;
+
+        BlockPosition pos = BlockSelectionUtil.getBlockLookingAtFar(reachDist);
+        if (pos != null) {
+            switch (keycode) {
+                case Input.Keys.NUMPAD_DOT -> {
+                    if (Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT)) {
+                        // Sey first position
+                        sendMsg("First position set to " + blockPosToString(pos));
+                        firstPos = pos.copy();
+                    } else if (Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT)) {
+                        // Sey second position
+                        sendMsg("Second position set to " + blockPosToString(pos));
+                        secondPos = pos.copy();
+                    } else {
+                        // Set paste origin
+                        sendMsg("Set paste origin to " + blockPosToString(pos));
+                        pasteStartPos = pos.copy();
+                    }
+                }
+                default -> {
+                    captured = false;
+                }
+            }
+        }
+
+        return captured;
+    }
+
+    public static void renderOverlay(ShapeRenderer shapeRenderer, float opacity) {
+        DrawInfo[] drawInfos = {
+                new DrawInfo( // Draw selection to copy
+                        ClientSelectionWand::getSelection,
+                        new Color(0, 0.7882352941f, 0.7882352941f, 0.25f * opacity),
+                        new Color(0.2745098039f, 0.2745098039f, 0.9098039216f, opacity),
+                        0,
+                        renderSelection == RenderSelections.CopySelection
+                ),
+                new DrawInfo( // Draw first position
+                        ClientSelectionWand::getFirstSelection,
+                        new Color(0, 0.7882352941f, 0.7882352941f, 0.2f * opacity),
+                        new Color(0.25f, 0.25f, 0.75f, opacity),
+                        0.02f,
+                        renderSelection == RenderSelections.FirstPos
+                ),
+                new DrawInfo( // Draw second position
+                        ClientSelectionWand::getSecondSelection,
+                        new Color(0, 0.7882352941f, 0.7882352941f, 0.2f * opacity),
+                        new Color(0.10f, 0.10f, 0.40f, opacity),
+                        0.02f,
+                        renderSelection == RenderSelections.SecondPos
+                ),
+                new DrawInfo( // Draw paste area
+                        ClientSelectionWand::getPasteSelection,
+                        new Color(0.64f, 0.64f, 0.64f, 0.25f * opacity),
+                        new Color(0.2745098039f, 0.9098039216f, 0.2745098039f, opacity),
+                        0,
+                        renderSelection == RenderSelections.PasteSelection
+                ),
+                new DrawInfo( // Draw paste origin
+                        ClientSelectionWand::getPastePositionSelection,
+                        new Color(0, 0.8f, 0, 0.64f * opacity),
+                        new Color(0.2745098039f, 0.9098039216f, 0.2745098039f, opacity),
+                        0.02f,
+                        false
+                )
+        };
+
+        for (DrawInfo drawInfo : drawInfos) {
+            Selection selection = drawInfo.selectionSupplier.get();
+            if (selection != null) {
+                selection.setCustomInflate(drawInfo.customInflate);
+                selection.draw(shapeRenderer, drawInfo.fillColor, drawInfo.borderColor, drawInfo.highlight);
+            }
+        }
+
+        Color dimmedInvertColour = new Color(invertColour.r, invertColour.g, invertColour.b, invertColour.a * opacity);
+
+        Selection pasteSelection = ClientSelectionWand.getPasteSelection();
+        if (pasteSelection != null) {
+            boolean[] inverts = new boolean[]{invertX, invertY, invertZ};
+            for (int dir = 0; dir < 3; dir++) {
+                if (!inverts[dir]) { continue; }
+                shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+                shapeRenderer.setColor(dimmedInvertColour);
+                shapeRenderer.box(
+                        dir == 0 ? pasteSelection.minPos.x - invertWidth : pasteSelection.minPos.x + (float) pasteSelection.sizeX() / 2 - 0.25f,
+                        dir == 1 ? pasteSelection.minPos.y - invertWidth : pasteSelection.minPos.y + (float) pasteSelection.sizeY() / 2 - 0.25f,
+                        dir == 2 ? pasteSelection.minPos.z : pasteSelection.minPos.z + (float) pasteSelection.sizeZ() / 2 + 0.25f,
+                        dir == 0 ? invertWidth : 0.5f,
+                        dir == 1 ? invertWidth : 0.5f,
+                        dir == 2 ? invertWidth : 0.5f);
+                shapeRenderer.end();
+
+                shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+                shapeRenderer.setColor(dimmedInvertColour);
+                shapeRenderer.box(
+                        dir == 0 ? pasteSelection.maxPos.x + 1 : pasteSelection.minPos.x + (float) pasteSelection.sizeX() / 2 - 0.25f,
+                        dir == 1 ? pasteSelection.maxPos.y + 1 : pasteSelection.minPos.y + (float) pasteSelection.sizeY() / 2 - 0.25f,
+                        dir == 2 ? pasteSelection.maxPos.z + 1 + invertWidth : pasteSelection.minPos.z + (float) pasteSelection.sizeZ() / 2 + 0.25f,
+                        dir == 0 ? invertWidth : 0.5f,
+                        dir == 1 ? invertWidth : 0.5f,
+                        dir == 2 ? invertWidth : 0.5f);
+                shapeRenderer.end();
+            }
+        }
+    }
+}

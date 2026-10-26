@@ -1,6 +1,7 @@
 {
   "formatVersion": 3,
   "display-name": "${p_name}",
+  "name": "${p_name}",
   "id": "${p_id}",
   "version": "${p_version}",
   "description": "${p_desc}",
@@ -15,13 +16,8 @@
     "icon": "${p_id}:icons/icon.png"
   },
   "entrypoints": {
-    "client-postInit": "${p_group}.ClientCosmicToolsMod"
-
-//    "preInit": "${p_group}.PreInitExampleMod",
+    "client-init": "${p_group}.ClientCosmicToolsMod",
     "init": "${p_group}.CosmicToolsInit"
-//    "postInit": "${p_group}.PostInitExampleMod",
-//
-//    "server-init": "${p_group}.ServerExampleMod"
   },
   "mixins": [
     "${p_id}.common.mixins.json",

@@ -2,14 +2,34 @@ package com.darkmattrmaestro.cosmic_tools.utils;
 
 import com.badlogic.gdx.InputProcessor;
 import com.darkmattrmaestro.cosmic_tools.Constants;
+//import com.darkmattrmaestro.cosmic_tools.items.ClientScythe;
+import com.darkmattrmaestro.cosmic_tools.items.ClientDisplayWand;
+import com.darkmattrmaestro.cosmic_tools.items.ClientSelectionWand;
 import com.darkmattrmaestro.cosmic_tools.items.ClientSpatula;
+import com.darkmattrmaestro.cosmic_tools.items.SelectionWand;
 import finalforeach.cosmicreach.items.ItemStack;
 import finalforeach.cosmicreach.ui.UI;
 import finalforeach.cosmicreach.util.Identifier;
 
 public class CosmicToolsInputProcessor implements InputProcessor {
     @Override
-    public boolean keyDown (int keycode) { return false; }
+    public boolean keyDown (int keycode) {
+        boolean blockInput = false;
+        try {
+            ItemStack selected = UI.hotbar.getSelectedItemStack();
+            if (selected == null) {
+                return false;
+            }
+
+            if ((Identifier.of(Constants.MOD_ID, "selection_wand").toString().equals(selected.getItem().getID()))) {
+                blockInput |= ClientSelectionWand.onKeyPressed(keycode);
+            } else if ((Identifier.of(Constants.MOD_ID, "display_wand").toString().equals(selected.getItem().getID()))) {
+                blockInput |= ClientDisplayWand.onKeyPressed(keycode);
+            }
+        } catch (Exception e) {}
+
+        return blockInput;
+    }
 
     @Override
     public boolean keyUp (int keycode) {
@@ -23,13 +43,20 @@ public class CosmicToolsInputProcessor implements InputProcessor {
 
     @Override
     public boolean touchDown (int x, int y, int pointer, int button) {
-        Constants.LOGGER.warn("Pressed {}", button);
         boolean blockInput = false;
+        hotbarItems:
         try {
             ItemStack selected = UI.hotbar.getSelectedItemStack();
+            if (selected == null) { break hotbarItems; }
 
-            if(selected != null && Identifier.of(Constants.MOD_ID, "spatula").toString().equals(selected.getItem().getID())) {
+            if (Identifier.of(Constants.MOD_ID, "spatula").toString().equals(selected.getItem().getID())) {
                 blockInput |= ClientSpatula.onMousePressed(button);
+            } else if (Identifier.of(Constants.MOD_ID, "scythe").toString().equals(selected.getItem().getID())) {
+//                blockInput |= ClientScythe.onMousePressed(button);
+            } else if(Identifier.of(Constants.MOD_ID, "selection_wand").toString().equals(selected.getItem().getID())) {
+                blockInput |= ClientSelectionWand.onMousePressed(button);
+            } else if(Identifier.of(Constants.MOD_ID, "display_wand").toString().equals(selected.getItem().getID())) {
+                blockInput |= ClientDisplayWand.onMousePressed(button);
             }
         } catch (Exception e) {}
 

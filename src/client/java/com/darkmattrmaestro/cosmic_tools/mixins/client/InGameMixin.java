@@ -4,11 +4,14 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.darkmattrmaestro.cosmic_tools.Constants;
+import com.darkmattrmaestro.cosmic_tools.items.ClientDisplayWand;
+import com.darkmattrmaestro.cosmic_tools.items.ClientSelectionWand;
 import com.darkmattrmaestro.cosmic_tools.items.ClientSpatula;
-import com.darkmattrmaestro.cosmic_tools.utils.ClientHallucination;
-import com.darkmattrmaestro.cosmic_tools.utils.CosmicToolsInputProcessor;
+import com.darkmattrmaestro.cosmic_tools.items.SelectionWand;
+import com.darkmattrmaestro.cosmic_tools.utils.*;
 import finalforeach.cosmicreach.gamestates.GameState;
 import finalforeach.cosmicreach.gamestates.InGame;
 import finalforeach.cosmicreach.items.ItemStack;
@@ -27,15 +30,32 @@ public class InGameMixin {
     @Unique
     private static ShapeRenderer cosmictools$sr2;
 
-    @Inject(method = "render", at = @At(value = "INVOKE", target = "Lfinalforeach/cosmicreach/ui/UI;render()V"))
-    public void renderOverlayUI(CallbackInfo ci) {
-        if (cosmictools$sr2 == null) {
-            cosmictools$sr2 = new ShapeRenderer();
-        }
+    @Inject(method = "renderWorld", at = @At(value = "TAIL"))
+    public void renderOverlayWorld(CallbackInfo ci) {
+        if (Selection.rawWorldCamera == null) { Selection.rawWorldCamera = GameState.IN_GAME.getWorldCamera(); }
+
+        if (cosmictools$sr2 == null) { cosmictools$sr2 = new ShapeRenderer(); }
 
         ItemStack selected = UI.hotbar.getSelectedItemStack();
+        if (selected == null) { return; }
 
-        if(selected != null && Identifier.of(Constants.MOD_ID, "spatula").toString().equals(selected.getItem().getID())) {
+        // In-world rendering
+        if(Identifier.of(Constants.MOD_ID, "selection_wand").toString().equals(selected.getItem().getID())) {
+            ClientSelectionWand.renderOverlay(cosmictools$sr2, 0.64f);
+        }
+
+        if(Identifier.of(Constants.MOD_ID, "display_wand").toString().equals(selected.getItem().getID())) {
+            // Selection Wand Highlighting
+            ClientDisplayWand.renderInWorld(cosmictools$sr2);
+        }
+
+        Gdx.gl.glEnable(3042);
+        Gdx.gl.glDepthFunc(519);
+        Gdx.gl.glBlendFunc(770, GL20.GL_ONE_MINUS_SRC_ALPHA);
+
+        // Spectral rendering
+
+        if(BlockSelectionUtil.isInActiveGame() && Identifier.of(Constants.MOD_ID, "spatula").toString().equals(selected.getItem().getID())) {
             // Spatula Paste Highlighting
             ClientSpatula clientSpatula = new ClientSpatula(selected.getItem().getID());
             if (GameState.currentGameState.getClass() == InGame.class && clientSpatula.getHallucination(InGame.getLocalPlayer()) != null) {
@@ -43,6 +63,18 @@ public class InGameMixin {
                 ClientHallucination.draw(clientSpatula.copyBlocks, cosmictools$sr2, clientSpatula.blockAxis.axis.toVector3(), colour);
             }
         }
+
+        if(Identifier.of(Constants.MOD_ID, "selection_wand").toString().equals(selected.getItem().getID())) {
+            // Selection Wand Highlighting
+            ClientSelectionWand.renderOverlay(cosmictools$sr2, 0.36f);
+        }
+
+        if(Identifier.of(Constants.MOD_ID, "display_wand").toString().equals(selected.getItem().getID())) {
+            // Selection Wand Highlighting
+            ClientDisplayWand.renderOverlay(cosmictools$sr2);
+        }
+
+        Gdx.gl.glClear(256);
 
     }
 

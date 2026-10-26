@@ -43,27 +43,12 @@ public class ClientSpatula extends FunctionalSpatula {
         }
         ClientSpatula clientSpatula = new ClientSpatula(selected.getItem().getID());
 
-        if(!BlockSelectionUtil.doesCollideFar(clientSpatula.reachDist)) { return false; }
+        if(!BlockSelectionUtil.doesCollideFar(clientSpatula.reachDist) || !BlockSelectionUtil.isInActiveGame()) { return false; }
 
         if(button == Input.Buttons.RIGHT) {
             // Right Click => paste
-            Constants.LOGGER.warn("CopyBlocks: {}", clientSpatula.getHallucination(InGame.getLocalPlayer()).blocks); // Update copyBlocks
-            Constants.LOGGER.warn("playerHasEnoughItems {}", clientSpatula.playerHasEnoughItems(InGame.getLocalPlayer()));
+            clientSpatula.getHallucination(InGame.getLocalPlayer()); // Update copyBlocks
             if (clientSpatula.playerHasEnoughItems(InGame.getLocalPlayer())) {
-                if (!InGame.getLocalPlayer().gamemode.hasInfiniteItems()) {
-                    AtomicInteger consumedItems = new AtomicInteger(clientSpatula.copyBlocks.blocks.size());
-                    InGame.getLocalPlayer().inventory.forEachSlot((itemSlot -> {
-                        if (itemSlot.getItem() == null) {
-                            return;
-                        }
-
-                        if (ItemBlockComparison.compareItemBlockID(itemSlot.getItem(), clientSpatula.initialBlockID)) {
-                            int minConsumed = Math.min(consumedItems.get(), itemSlot.getItemAmount());
-                            itemSlot.addAmount(-minConsumed);
-                            consumedItems.addAndGet(-minConsumed);
-                        }
-                    }));
-                }
 
                 List<Chunk> chunksToUpdate = new ArrayList<>();
                 String triggerName = "onPlace";

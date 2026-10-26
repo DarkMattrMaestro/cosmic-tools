@@ -14,9 +14,9 @@ jigsawAccess {
     addManipulators(file("$projectDir/src/common/resources/${p_id}.manipulator"))
 }
 
-jigsawInject {
-    setModJson(file("$projectDir/src/common/resources/puzzle.mod.json"))
-}
+//jigsawInject {
+//    setModJson(file("$projectDir/src/common/resources/puzzle.mod.json"))
+//}
 
 repositories {
     mavenCentral()
@@ -29,7 +29,12 @@ dependencies {
 
     cosmicReach("finalforeach:cosmic-reach:${cosmic_reach_version}")
 
-    commonImplementation "com.github.PuzzlesHQ:cosmic-api:${cosmic_api_version}"
+    clientImplementation "com.github.PuzzlesHQ:cosmic-api:${cosmic_api_version}:merged"
+    commonImplementation "com.github.PuzzlesHQ:cosmic-api:${cosmic_api_version}:merged"
+
+    clientImplementation("com.github.DarkMattrMaestro:imgui-integration:${imgui_integration_version}")
+
+    clientImplementation("org.openpnp:opencv:${opencv_version}")
 }
 
 processCommonResources {
@@ -45,12 +50,14 @@ processCommonResources {
             "cosmic_reach_version": cosmic_reach_version,
             "puzzle_loader_cosmic_version": puzzle_loader_cosmic_version,
             "puzzle_loader_core_version": puzzle_loader_core_version,
-            "cosmic_api_version": cosmic_api_version
+            "cosmic_api_version": cosmic_api_version,
+
+            "opencv_version": opencv_version
     ]
 
     inputs.properties projectProperties
 
-    filesMatching(["puzzle.mod.json"]) {
+    filesMatching(["puzzle.mod.json", "CommandLoadVideo.class"]) {
         expand projectProperties
     }
 }
@@ -58,6 +65,12 @@ processCommonResources {
 wrapper {
     gradleVersion = "8.14"
     distributionType = Wrapper.DistributionType.ALL
+}
+
+tasks.buildMergedJar {
+    archiveBaseName = project.name + "-" + project.cosmic_reach_version.replace("-alpha", "")
+    archiveVersion = version
+    archiveClassifier = ''
 }
 
 afterEvaluate {

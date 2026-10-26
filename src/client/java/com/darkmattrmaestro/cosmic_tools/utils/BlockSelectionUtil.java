@@ -11,6 +11,7 @@ import finalforeach.cosmicreach.gamestates.InGame;
 
 import finalforeach.cosmicreach.blocks.BlockPosition;
 import finalforeach.cosmicreach.blocks.BlockState;
+import finalforeach.cosmicreach.ui.UI;
 
 /**
  * The <code>BlockSelectionUtil</code> provides utility functions that relate to the determination of the currently selected block.
@@ -221,15 +222,15 @@ public class BlockSelectionUtil {
                             blockAxis.pos = BlockPosition.ofGlobal(InGame.getLocalPlayer().getZone(), x, y, z);
 
                             double dist = CustomGameMath.rayAABBTest(ray, subAABB);
-                            if (dist < closestCollision && !(subAABB.getWidth() == 0 || subAABB.getHeight() == 0 || subAABB.getDepth() == 0)) {
+                            if (dist < closestCollision) {
                                 closestCollision = dist;
 
                                 Vector3 collisionPos = new Vector3();
                                 ray.getEndPoint(collisionPos, (float) dist);
 
-                                float dx = Math.abs(subAABB.getCenterX() - collisionPos.x) / subAABB.getWidth();
-                                float dy = Math.abs(subAABB.getCenterY() - collisionPos.y) / subAABB.getHeight();
-                                float dz = Math.abs(subAABB.getCenterZ() - collisionPos.z) / subAABB.getDepth();
+                                float dx = Math.abs(subAABB.getCenterX() - collisionPos.x) / Math.max(subAABB.getWidth(), 0.000001f);
+                                float dy = Math.abs(subAABB.getCenterY() - collisionPos.y) / Math.max(subAABB.getHeight(), 0.000001f);
+                                float dz = Math.abs(subAABB.getCenterZ() - collisionPos.z) / Math.max(subAABB.getDepth(), 0.000001f);
 
                                 if (dx > dy && dx > dz) { // X axis collision
                                     blockAxis.axis = new Vector3Int(
@@ -286,5 +287,135 @@ public class BlockSelectionUtil {
         }
 
         return null;
+    }
+
+    /**
+     * <p>
+     * Return the block position and axis of the nearest collision with the ray cast from the player's view direction.
+     * </p>
+     * <p>
+     * See <a href="http://www.cse.yorku.ca/~amana/research/grid.pdf">http://www.cse.yorku.ca/~amana/research/grid.pdf</a> for the voxel iteration method.
+     * </p>
+     *
+     * @param maxDist the maximum reach distance of the player. This equates to the maximal length of the ray projected from the player.
+     * @return the block position and axis of the collided block
+     */
+    public static BlockPosition getBlockLookingAtFar(float maxDist) {
+        Camera worldCamera = GameState.IN_GAME.getWorldCamera();
+        Ray ray = new Ray();
+        ray.set(worldCamera.position, worldCamera.direction);
+
+        //-------------------------//
+
+        int x = (int) Math.floor(ray.origin.x);
+        int y = (int) Math.floor(ray.origin.y);
+        int z = (int) Math.floor(ray.origin.z);
+
+        int stepX = 0 < ray.direction.x ? 1 : (ray.direction.x < 0 ? -1 : 0);
+        int stepY = 0 < ray.direction.y ? 1 : (ray.direction.y < 0 ? -1 : 0);
+        int stepZ = 0 < ray.direction.z ? 1 : (ray.direction.z < 0 ? -1 : 0);
+
+        double tMaxX = Integer.MAX_VALUE;
+        double tDeltaX = Integer.MAX_VALUE;
+        if (ray.direction.x != 0) {
+            tMaxX = ((x + (stepX > 0 ? 1 : 0)) - ray.origin.x) / ray.direction.x;
+            tDeltaX = stepX / ray.direction.x;
+        }
+
+        double tMaxY = Integer.MAX_VALUE;
+        double tDeltaY = Integer.MAX_VALUE;
+        if (ray.direction.y != 0) {
+            tMaxY = ((y + (stepY > 0 ? 1 : 0)) - ray.origin.y) / ray.direction.y;
+            tDeltaY = stepY / ray.direction.y;
+        }
+
+        double tMaxZ = Integer.MAX_VALUE;
+        double tDeltaZ = Integer.MAX_VALUE;
+        if (ray.direction.z != 0) {
+            tMaxZ = ((z + (stepZ > 0 ? 1 : 0)) - ray.origin.z) / ray.direction.z;
+            tDeltaZ = stepZ / ray.direction.z;
+        }
+
+        // For each step, determine which distance to the next voxel boundary is lowest (i.e.
+        // which voxel boundary is nearest) and walk that way.
+        for (int i = 0; i < maxDist; i++)
+        {
+            // Check for collisions with a block
+            BlockPosition blockPosAdj = BlockPosition.ofGlobal(InGame.getLocalPlayer().getZone(), x, y, z);
+            if (blockPosAdj.chunk() == null) {
+                return null;
+            }
+            BlockState blockAdj = blockPosAdj.getBlockState();
+            if (blockAdj != null) {
+                // Get main AABB of block and check for collision
+                BoundingBox mainAABB = new BoundingBox();
+                blockAdj.getBoundingBox(mainAABB, x, y, z);
+                if (CustomGameMath.rayAABBTest(ray, mainAABB, maxDist)) {
+                    // Get sub AABBs and check individually for collisions
+                    Array<BoundingBox> subAABBs = new Array<>(BoundingBox.class);
+
+                    blockAdj.getAllBoundingBoxes(subAABBs, x, y, z);
+                    for (BoundingBox subAABB : subAABBs) {
+                        if (CustomGameMath.rayAABBTest(ray, subAABB, maxDist)) {
+                            // Collision with block within reach
+                            return BlockPosition.ofGlobal(InGame.getLocalPlayer().getZone(), x, y, z);
+                        }
+                    }
+                }
+            }
+
+            // Do the next step.
+            if (tMaxX < tMaxY && tMaxX < tMaxZ)
+            {
+                // tMax.X is the lowest, an YZ cell boundary plane is nearest.
+                x += stepX;
+                tMaxX += tDeltaX;
+            }
+            else if (tMaxY < tMaxZ)
+            {
+                // tMax.Y is the lowest, an XZ cell boundary plane is nearest.
+                y += stepY;
+                tMaxY += tDeltaY;
+            }
+            else
+            {
+                // tMax.Z is the lowest, an XY cell boundary plane is nearest.
+                z += stepZ;
+                tMaxZ += tDeltaZ;
+            }
+        }
+
+        return null;
+    }
+
+    public static boolean isInActiveGame() {
+        return InGame.allowPlayerControls() && !UI.isInventoryOpen();
+    }
+
+    public static Vector3Int primaryViewDir() {
+        Camera worldCamera = GameState.IN_GAME.getWorldCamera();
+        return maxDirOnly(worldCamera.direction.x, worldCamera.direction.y, worldCamera.direction.z);
+    }
+
+    public static Vector3Int upViewDir() {
+        Camera worldCamera = GameState.IN_GAME.getWorldCamera();
+        worldCamera.normalizeUp();
+        return maxDirOnly(worldCamera.up.x, worldCamera.up.y, worldCamera.up.z);
+    }
+
+    public static Vector3Int rightViewDir() {
+        Camera worldCamera = GameState.IN_GAME.getWorldCamera();
+        Vector3 right = worldCamera.direction.crs(worldCamera.up);
+        return maxDirOnly(right.x, right.y, right.z);
+    }
+
+    private static Vector3Int maxDirOnly(float x, float y, float z) {
+        if (Math.abs(x) > Math.abs(y) && Math.abs(x) > Math.abs(z)) {
+            return new Vector3Int(x > 0 ? 1 : -1, 0, 0);
+        } else if (Math.abs(y) > Math.abs(z)) {
+            return new Vector3Int(0, y > 0 ? 1 : -1, 0);
+        } else {
+            return new Vector3Int(0, 0, z > 0 ? 1 : -1);
+        }
     }
 }
